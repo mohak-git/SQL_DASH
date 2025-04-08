@@ -1,0 +1,35 @@
+{
+  "name": "sql-dashboard",
+  "version": "1.0.0",
+  "description": "SQL Dashboard Control Panel",
+  "main": "electron.js",
+  "scripts": {
+    "start": "electron .",
+    "dev": "electron .",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start-react": "cd react-app && npm start",
+    "build": "electron-builder"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "devDependencies": {
+    "electron": "^28.1.0",
+    "electron-builder": "^26.0.12"
+  },
+  "build": {
+    "appId": "com.example.myapp",
+    "productName": "MyElectronReactApp",
+    "win": {
+      "target": "nsis"
+    },
+    "directories": {
+      "buildResources": "assets",
+      "output": "dist"
+    }
+  },
+  "dependencies": {
+    "ansi-to-html": "^0.7.2"
+  }
+}
