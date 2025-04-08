@@ -16,6 +16,11 @@ const frontendLogs = document.getElementById('frontend-logs');
 const backendClearLogBtn = document.getElementById('backend-clear-log');
 const frontendClearLogBtn = document.getElementById('frontend-clear-log');
 
+// Title Bar Controls
+const minimizeBtn = document.getElementById('minimize-btn');
+const maximizeBtn = document.getElementById('maximize-btn');
+const closeBtn = document.getElementById('close-btn');
+
 let isBackendRunning = false;
 let isFrontendRunning = false;
 
@@ -109,6 +114,11 @@ frontendEditConfigBtn.addEventListener('click', () => ipcRenderer.send('open-con
 // Log Clear Buttons
 backendClearLogBtn.addEventListener('click', () => clearLog('backend'));
 frontendClearLogBtn.addEventListener('click', () => clearLog('frontend'));
+
+// Title Bar Window Controls
+minimizeBtn.addEventListener('click', () => ipcRenderer.send('minimize-window'));
+maximizeBtn.addEventListener('click', () => ipcRenderer.send('maximize-restore-window'));
+closeBtn.addEventListener('click', () => ipcRenderer.send('close-window'));
 
 // --- IPC Handlers from Main --- 
 

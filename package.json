@@ -7,8 +7,10 @@
     "start": "electron .",
     "dev": "electron .",
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start-react": "cd react-app && npm start",
-    "build": "electron-builder"
+    "build:frontend": "cd frontend && npm run build",
+    "package": "npm run build:frontend && electron-builder",
+    "dist": "npm run package",
+    "postinstall": "electron-builder install-app-deps"
   },
   "keywords": [],
   "author": "",
@@ -16,18 +18,50 @@
   "type": "commonjs",
   "devDependencies": {
     "electron": "^28.1.0",
-    "electron-builder": "^26.0.12"
+    "electron-builder": "^24.9.1"
   },
   "build": {
-    "appId": "com.example.myapp",
-    "productName": "MyElectronReactApp",
-    "win": {
-      "target": "nsis"
-    },
+    "appId": "com.example.sqldashboard",
+    "productName": "SQL Dashboard Panel",
     "directories": {
-      "buildResources": "assets",
       "output": "dist"
-    }
+    },
+    "files": [
+      "electron.js",
+      "dashboard.html",
+      "dashboard.js",
+      "package.json",
+      "config/",
+      "assets/",
+      "backend/",        
+      "!backend/logs",  
+      "!backend/.gitignore",
+      "frontend/dist/" 
+    ],
+    "extraResources": [
+        { 
+            "from": "node_modules/node-pty/build/Release/", 
+            "to": "node_modules/node-pty/build/Release/", 
+            "filter": ["*.node"] 
+        }
+    ],
+    "win": {
+      "target": "nsis", 
+      "icon": "assets/icon.ico"
+    },
+    "mac": {
+      "target": "dmg",
+      "icon": "assets/icon.icns"
+    },
+    "linux": {
+      "target": "AppImage",
+      "icon": "assets/icon.png"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true
+    },
+    "asar": false
   },
   "dependencies": {
     "ansi-to-html": "^0.7.2"

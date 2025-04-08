@@ -10,6 +10,8 @@
             --border-color: #cccccc;
             --text-color: #333333;
             --text-muted: #666666;
+            --title-bar-bg: #e0e0e0; /* Slightly darker than main bg */
+            --title-bar-text: #444444;
             --status-running-bg: #28a745;
             --status-stopped-bg: #dc3545;
             --button-bg: #007bff;
@@ -18,6 +20,9 @@
             --log-bg: #2b2b2b;
             --log-text: #d4d4d4;
             --log-timestamp: #888888;
+            --control-hover-bg: #cccccc;
+            --control-close-hover-bg: #e81123;
+            --control-close-hover-text: #ffffff;
         }
         body {
             font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
@@ -29,15 +34,77 @@
             height: 100vh;
             display: flex;
             flex-direction: column;
+            overflow: hidden; /* Prevent body scrollbar */
+        }
+        
+        /* --- Custom Title Bar --- */
+        .title-bar {
+            background-color: var(--title-bar-bg);
+            height: 32px; /* Standard height */
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 8px;
+            border-bottom: 1px solid var(--border-color);
+            flex-shrink: 0; /* Prevent shrinking */
+            user-select: none;
+        }
+        .title-bar .title {
+            font-weight: 600;
+            color: var(--title-bar-text);
+            margin-left: 4px;
+            /* Allow dragging */
+            -webkit-app-region: drag;
+            flex-grow: 1; /* Allow title to take space */
+            text-align: center; /* Center title */
+            overflow: hidden;
+            white-space: nowrap;
+            text-overflow: ellipsis;
+        }
+        .title-bar .window-controls {
+            display: flex;
+            /* Prevent dragging controls */
+            -webkit-app-region: no-drag;
+        }
+        .title-bar .control-button {
+            width: 40px;
+            height: 32px;
+            border: none;
+            background: none;
+            font-size: 16px;
+            line-height: 32px;
+            text-align: center;
+            color: var(--title-bar-text);
+            cursor: pointer;
+            transition: background-color 0.15s ease;
+        }
+        .title-bar .control-button:hover {
+            background-color: var(--control-hover-bg);
+        }
+        .title-bar .control-button.close-button:hover {
+            background-color: var(--control-close-hover-bg);
+            color: var(--control-close-hover-text);
+        }
+        /* Using simple text characters for controls */
+        #minimize-btn::before { content: "—"; }
+        #maximize-btn::before { content: "□"; }
+        #close-btn::before { content: "✕"; }
+        /* ------------------------ */
+
+        .main-content {
+            flex-grow: 1; 
+            display: flex;
+            flex-direction: column;
+            overflow: hidden; /* Contain scroll within */
         }
         .container {
-            flex-grow: 1; /* Allow container to fill space */
+            flex-grow: 1;
             background-color: var(--panel-bg);
             margin: 20px;
             padding: 25px;
             border-radius: 6px;
             box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-            overflow-y: auto; /* Allow scrolling if content overflows */
+            overflow-y: auto; /* Allow scrolling */
             display: flex;
             flex-direction: column;
             gap: 25px; /* Space between server cards */
@@ -167,51 +234,64 @@
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>Dashboard Control Panel</h1>
-        
-        <!-- Backend Server Card -->
-        <div class="server-card">
-            <div class="card-header">
-                <div class="server-title">Backend Server</div>
-                <div class="status-indicator">
-                    <div class="status status-stopped" id="backend-status">Stopped</div>
-                </div>
-            </div>
-            <div class="controls">
-                <button id="backend-start" title="Start Backend Server"><span class="icon">▶</span> Start</button>
-                <button id="backend-stop" title="Stop Backend Server" disabled><span class="icon">■</span> Stop</button>
-                <button id="backend-edit-config" title="Edit Backend Configuration File"><span class="icon">⚙️</span> Config</button>
-            </div>
-            <div class="log-container">
-                <div class="log-header">
-                    <label>Backend Logs</label>
-                    <button id="backend-clear-log" title="Clear Backend Log View">Clear</button>
-                </div>
-                <div class="logs" id="backend-logs"></div>
-            </div>
+    <!-- Custom Title Bar -->
+    <div class="title-bar">
+        <div class="title">Dashboard Control Panel</div>
+        <div class="window-controls">
+            <button id="minimize-btn" class="control-button" title="Minimize"></button>
+            <button id="maximize-btn" class="control-button" title="Maximize"></button>
+            <button id="close-btn" class="control-button close-button" title="Close"></button>
         </div>
+    </div>
 
-        <!-- Frontend Server Card -->
-        <div class="server-card">
-            <div class="card-header">
-                <div class="server-title">Frontend Server</div>
-                 <div class="status-indicator">
-                    <div class="status status-stopped" id="frontend-status">Stopped</div>
+    <!-- Main Content Area -->
+    <div class="main-content">
+        <div class="container">
+            <!-- No main H1 here anymore, title is in the bar -->
+            
+            <!-- Backend Server Card -->
+            <div class="server-card">
+                <div class="card-header">
+                    <div class="server-title">Backend Server</div>
+                    <div class="status-indicator">
+                        <div class="status status-stopped" id="backend-status">Stopped</div>
+                    </div>
+                </div>
+                <div class="controls">
+                    <button id="backend-start" title="Start Backend Server"><span class="icon">▶</span> Start</button>
+                    <button id="backend-stop" title="Stop Backend Server" disabled><span class="icon">■</span> Stop</button>
+                    <button id="backend-edit-config" title="Edit Backend Configuration File"><span class="icon">⚙️</span> Config</button>
+                </div>
+                <div class="log-container">
+                    <div class="log-header">
+                        <label>Backend Logs</label>
+                        <button id="backend-clear-log" title="Clear Backend Log View">Clear</button>
+                    </div>
+                    <div class="logs" id="backend-logs"></div>
                 </div>
             </div>
-            <div class="controls">
-                <button id="frontend-start" title="Start Frontend Server" disabled><span class="icon">▶</span> Start</button>
-                <button id="frontend-stop" title="Stop Frontend Server" disabled><span class="icon">■</span> Stop</button>
-                <button id="frontend-open-browser" title="Open Frontend in Browser" disabled><span class="icon">🔗</span> Open</button> 
-                <button id="frontend-edit-config" title="Edit Frontend Configuration File" disabled><span class="icon">⚙️</span> Config</button>
-            </div>
-             <div class="log-container">
-                <div class="log-header">
-                    <label>Frontend Logs</label>
-                     <button id="frontend-clear-log" title="Clear Frontend Log View">Clear</button>
+
+            <!-- Frontend Server Card -->
+            <div class="server-card">
+                <div class="card-header">
+                    <div class="server-title">Frontend Server</div>
+                    <div class="status-indicator">
+                        <div class="status status-stopped" id="frontend-status">Stopped</div>
+                    </div>
                 </div>
-                <div class="logs" id="frontend-logs"></div>
+                <div class="controls">
+                    <button id="frontend-start" title="Start Frontend Server" disabled><span class="icon">▶</span> Start</button>
+                    <button id="frontend-stop" title="Stop Frontend Server" disabled><span class="icon">■</span> Stop</button>
+                    <button id="frontend-open-browser" title="Open Frontend in Browser" disabled><span class="icon">🔗</span> Open</button> 
+                    <button id="frontend-edit-config" title="Edit Frontend Configuration File" disabled><span class="icon">⚙️</span> Config</button>
+                </div>
+                <div class="log-container">
+                    <div class="log-header">
+                        <label>Frontend Logs</label>
+                        <button id="frontend-clear-log" title="Clear Frontend Log View">Clear</button>
+                    </div>
+                    <div class="logs" id="frontend-logs"></div>
+                </div>
             </div>
         </div>
     </div>
