@@ -3,6 +3,8 @@ import cors from "cors";
 import fs from "fs";
 import path from "path";
 import dbRouter from "./routes/db.routes.js";
+import userRouter from "./routes/user.routes.js";
+import queryRouter from "./routes/query.routes.js";
 import errorHandler from "./middleware/errorHandler.middleware.js";
 import { fileURLToPath } from "url";
 import { dirname } from "path";
@@ -46,6 +48,8 @@ app.get("/api/status", (req, res) => {
 });
 
 app.use("/db", dbRouter);
+app.use("/users", userRouter);
+app.use("/query", queryRouter);
 
 app.use(errorHandler);
 

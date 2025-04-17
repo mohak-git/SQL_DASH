@@ -30,6 +30,10 @@ export default defineConfig({
   server: {
     port: frontendPort,
     host: true, // Expose on network
+    worker: {
+      format: 'es',
+      plugins: [],
+    },
     proxy: {
       '/api': {
         target: actualBackendUrl, // Use the dynamically determined URL
