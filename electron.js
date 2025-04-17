@@ -3,6 +3,7 @@ const { exec, fork } = require('child_process');
 const path = require('path');
 const fs = require('fs');
 const configManager = require('./config/config-manager');
+const { ensureNodeExists } = require('./utils/checkNode');
 
 let mainWindow = null;
 let tray = null;
@@ -517,7 +518,10 @@ if (!gotTheLock) {
     }
   });
 
-app.whenReady().then(() => {
+app.whenReady().then(async() => {
+    try {
+        await ensureNodeExists(mainWindow);
+    
     configManager.initialize();
     
     configManager.on('configChanged', async (serverType) => {
@@ -649,6 +653,10 @@ app.whenReady().then(() => {
       if (BrowserWindow.getAllWindows().length === 0) createOrShowMainWindow();
       else if (mainWindow) mainWindow.show(); 
     });
+    } catch (error) {
+        console.error('Failed during startup:', error);
+        app.quit();
+    }
   });
 
   app.on('window-all-closed', () => {
