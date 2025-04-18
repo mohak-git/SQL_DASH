@@ -19,8 +19,9 @@ import { useParams } from "react-router-dom";
 import { toast } from "react-toastify";
 import "../../monacoSetup.js";
 import Error from "../ui/Error.jsx";
-import { getQueryExecuted } from "../utils/api/axios.js";
+import { getGenAISuggestion, getQueryExecuted } from "../utils/api/axios.js";
 import CopyButton from "./common/CopyButton.jsx";
+import debounce from "lodash.debounce";
 
 // Editor configuration
 const EDITOR_OPTIONS = {
@@ -46,6 +47,9 @@ const EDITOR_OPTIONS = {
     renderIndentGuides: true,
     smoothScrolling: true,
     padding: { top: 12 },
+    inlineSuggest: {
+        enabled: true,
+    },
 };
 
 // Initial queries
@@ -69,6 +73,7 @@ const INITIAL_QUERIES = {
 const getInitialContent = (dbName, tableName) => {
     const baseContent = [
         `-- Ctrl+Enter to execute`,
+        `-- Wait 1.5 seconds to get ai suggestions`,
         ` `,
         `SHOW DATABASES;`,
         `SELECT VERSION() AS mysql_version;`,
@@ -359,6 +364,36 @@ const ErrorDisplay = ({ error }) => (
         )}
     </div>
 );
+const registerInlineSuggestion = (model, suggestionText) => {
+    monaco.languages.registerInlineCompletionsProvider("mysql", {
+        provideInlineCompletions: () => ({
+            items: [
+                {
+                    text: suggestionText,
+                    range: model.getFullModelRange(),
+                    command: {
+                        id: "applySuggestion",
+                        title: "Apply Suggestion",
+                    },
+                },
+            ],
+            dispose: () => {},
+        }),
+    });
+
+    monaco.languages.registerCompletionItemProvider("mysql", {
+        provideCompletionItems: () => ({
+            suggestions: [
+                {
+                    label: "AI autocomplete",
+                    kind: monaco.languages.CompletionItemKind.Text,
+                    insertText: suggestionText,
+                    documentation: "Suggestion from Gemini Pro",
+                },
+            ],
+        }),
+    });
+};
 
 const QueryConsole = () => {
     const { dbName, tableName } = useParams();
@@ -374,6 +409,9 @@ const QueryConsole = () => {
         monacoRef.current = monaco.editor.create(editorRef.current, {
             value: getInitialContent(dbName, tableName),
             ...EDITOR_OPTIONS,
+            suggest: {
+                preview: true,
+            },
         });
 
         // Add keyboard shortcuts
@@ -408,11 +446,6 @@ const QueryConsole = () => {
             keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyY],
             run: redoEdit,
         });
-
-
-        // AutoCompletion
-        
-
 
         // Execute initial queries if context is provided
         const executeInitialQueries = async () => {
@@ -451,8 +484,41 @@ const QueryConsole = () => {
 
         executeInitialQueries();
 
+        const model = monacoRef.current.getModel();
+
+        const handleChange = debounce(async () => {
+            const code = model.getValue().trim();
+            const suggestion = await fetchGenAISuggestion(code);
+            if (suggestion) registerInlineSuggestion(model, suggestion);
+            monacoRef.current.trigger(
+                "keyboard",
+                "editor.action.triggerSuggest",
+                {},
+            );
+        }, 1500);
+
+        model.onDidChangeContent(handleChange);
+
         return () => monacoRef.current?.dispose();
     }, [dbName, tableName]);
+
+    const fetchGenAISuggestion = async (code) => {
+        // const position = editor.getPosition();
+        // const currentLine = editor
+        //     .getModel()
+        //     .getLineContent(position.lineNumber)
+        //     .trim();
+
+        // if (!currentLine) return null;
+
+        try {
+            const { data } = await getGenAISuggestion(code);
+            return data.response;
+        } catch (err) {
+            console.log(`Failed to fetch AI suggestion: ${err.message}`);
+            return null;
+        }
+    };
 
     const executeQueriesSequentially = async (queries) => {
         let lastResult = null;

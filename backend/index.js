@@ -4,6 +4,7 @@ import fs from "fs";
 import path from "path";
 import dbRouter from "./routes/db.routes.js";
 import userRouter from "./routes/user.routes.js";
+import genaiRouter from "./routes/genai.routes.js";
 import queryRouter from "./routes/query.routes.js";
 import errorHandler from "./middleware/errorHandler.middleware.js";
 import { fileURLToPath } from "url";
@@ -50,6 +51,7 @@ app.get("/api/status", (req, res) => {
 app.use("/db", dbRouter);
 app.use("/users", userRouter);
 app.use("/query", queryRouter);
+app.use("/genai", genaiRouter)
 
 app.use(errorHandler);
 
