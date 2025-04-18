@@ -5,8 +5,8 @@
     <title>Server Control Dashboard</title>
     <style>
         :root {
-            --bg-color: #f0f0f0;
-            --panel-bg: #ffffff;
+            --bg-color: #444;
+            --panel-bg: #555;
             --border-color: #cccccc;
             --text-color: #333333;
             --text-muted: #666666;
@@ -230,6 +230,11 @@
             color: var(--log-timestamp);
             margin-right: 8px;
             user-select: none; /* Prevent selecting timestamp */
+        }
+        ::-webkit-scrollbar{
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
         }
     </style>
 </head>

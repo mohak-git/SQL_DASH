@@ -2,6 +2,7 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import fs from 'fs'
 import path from 'path'
+import tailwindcss from '@tailwindcss/vite'
 
 // Load configuration
 let fileConfig
@@ -25,10 +26,14 @@ console.log(`[vite.config.js] Actual Backend URL for Proxy: ${actualBackendUrl}`
 
 // https://vite.dev/config/
 export default defineConfig({
-  plugins: [react()],
+  plugins: [react(), tailwindcss()],
   server: {
     port: frontendPort,
     host: true, // Expose on network
+    worker: {
+      format: 'es',
+      plugins: [],
+    },
     proxy: {
       '/api': {
         target: actualBackendUrl, // Use the dynamically determined URL

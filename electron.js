@@ -3,6 +3,7 @@ const { exec, fork } = require('child_process');
 const path = require('path');
 const fs = require('fs');
 const configManager = require('./config/config-manager');
+const { ensureNodeExists } = require('./utils/checkNode');
 
 let mainWindow = null;
 let tray = null;
@@ -517,126 +518,129 @@ if (!gotTheLock) {
         }
     });
 
-    app.whenReady().then(() => {
-        configManager.initialize();
-
-        configManager.on('configChanged', async (serverType) => {
-            const isBackendChange = serverType === 'backend';
-            const backendRunning = !!backendProcess;
-            const frontendRunning = !!frontendProcess;
-
-            let restartInitiated = false;
-
-            // Restart the changed server if it was running
-            if ((isBackendChange && backendRunning) || (!isBackendChange && frontendRunning)) {
-                logToRenderer(serverType, 'Configuration changed detected. Restarting server...');
-                await restartServer(serverType);
-                restartInitiated = true;
+app.whenReady().then(async() => {
+    try {
+        await ensureNodeExists(mainWindow);
+    
+    configManager.initialize();
+    
+    configManager.on('configChanged', async (serverType) => {
+      const isBackendChange = serverType === 'backend';
+      const backendRunning = !!backendProcess;
+      const frontendRunning = !!frontendProcess;
+      
+      let restartInitiated = false;
+      
+      // Restart the changed server if it was running
+      if ((isBackendChange && backendRunning) || (!isBackendChange && frontendRunning)) {
+          logToRenderer(serverType, 'Configuration changed detected. Restarting server...');
+          await restartServer(serverType);
+          restartInitiated = true;
+      }
+       // If backend config changed AND frontend was running, restart frontend (handled within restartServer)
+       // No need for extra logic here now
+      
+      if(!restartInitiated) {
+          logToRenderer(serverType, 'Configuration changed detected. Changes will apply on next start.');
+      }
+    });
+    
+    // --- Create Application Menu --- 
+    const menuTemplate = [
+      // { role: 'appMenu' } // macOS only
+      ...(process.platform === 'darwin' ? [{ 
+        label: app.name, 
+        submenu: [
+          { role: 'about' },
+          { type: 'separator' },
+          { role: 'services' },
+          { type: 'separator' },
+          { role: 'hide' },
+          { role: 'hideOthers' },
+          { role: 'unhide' },
+          { type: 'separator' },
+          { label: 'Quit', accelerator: 'CmdOrCtrl+Q', click: () => { app.isQuitting = true; quitApplication(); } }
+        ]
+      }] : []),
+      // { role: 'fileMenu' }
+      {
+        label: 'File',
+        submenu: [
+          process.platform === 'darwin' ? { role: 'close' } : { label: 'Close Window', accelerator: 'Alt+F4', click: () => mainWindow?.hide() }, // Custom close/hide
+          { label: 'Quit', accelerator: 'CmdOrCtrl+Q', click: () => { app.isQuitting = true; quitApplication(); } } // Ensure quit is available
+        ]
+      },
+      // { role: 'editMenu' }
+      {
+        label: 'Edit',
+        submenu: [
+          { role: 'undo' },
+          { role: 'redo' },
+          { type: 'separator' },
+          { role: 'cut' },
+          { role: 'copy' },
+          { role: 'paste' },
+          ...(process.platform === 'darwin' ? [
+            { role: 'pasteAndMatchStyle' },
+            { role: 'delete' },
+            { role: 'selectAll' },
+            { type: 'separator' },
+            {
+              label: 'Speech',
+              submenu: [
+                { role: 'startSpeaking' },
+                { role: 'stopSpeaking' }
+              ]
             }
-            // If backend config changed AND frontend was running, restart frontend (handled within restartServer)
-            // No need for extra logic here now
-
-            if (!restartInitiated) {
-                logToRenderer(serverType, 'Configuration changed detected. Changes will apply on next start.');
-            }
-        });
-
-        // --- Create Application Menu --- 
-        const menuTemplate = [
-            // { role: 'appMenu' } // macOS only
-            ...(process.platform === 'darwin' ? [{
-                label: app.name,
-                submenu: [
-                    { role: 'about' },
-                    { type: 'separator' },
-                    { role: 'services' },
-                    { type: 'separator' },
-                    { role: 'hide' },
-                    { role: 'hideOthers' },
-                    { role: 'unhide' },
-                    { type: 'separator' },
-                    { label: 'Quit', accelerator: 'CmdOrCtrl+Q', click: () => { app.isQuitting = true; quitApplication(); } }
-                ]
-            }] : []),
-            // { role: 'fileMenu' }
-            {
-                label: 'File',
-                submenu: [
-                    process.platform === 'darwin' ? { role: 'close' } : { label: 'Close Window', accelerator: 'Alt+F4', click: () => mainWindow?.hide() }, // Custom close/hide
-                    { label: 'Quit', accelerator: 'CmdOrCtrl+Q', click: () => { app.isQuitting = true; quitApplication(); } } // Ensure quit is available
-                ]
-            },
-            // { role: 'editMenu' }
-            {
-                label: 'Edit',
-                submenu: [
-                    { role: 'undo' },
-                    { role: 'redo' },
-                    { type: 'separator' },
-                    { role: 'cut' },
-                    { role: 'copy' },
-                    { role: 'paste' },
-                    ...(process.platform === 'darwin' ? [
-                        { role: 'pasteAndMatchStyle' },
-                        { role: 'delete' },
-                        { role: 'selectAll' },
-                        { type: 'separator' },
-                        {
-                            label: 'Speech',
-                            submenu: [
-                                { role: 'startSpeaking' },
-                                { role: 'stopSpeaking' }
-                            ]
-                        }
-                    ] : [
-                        { role: 'delete' },
-                        { type: 'separator' },
-                        { role: 'selectAll' }
-                    ])
-                ]
-            },
-            // { role: 'viewMenu' }
-            {
-                label: 'View',
-                submenu: [
-                    { role: 'reload' },
-                    { role: 'forceReload' },
-                    { role: 'toggleDevTools' },
-                    { type: 'separator' },
-                    { role: 'resetZoom' },
-                    { role: 'zoomIn' },
-                    { role: 'zoomOut' },
-                    { type: 'separator' },
-                    { role: 'togglefullscreen' }
-                ]
-            },
-            // { role: 'windowMenu' }
-            {
-                label: 'Window',
-                submenu: [
-                    { role: 'minimize' },
-                    { role: 'zoom' }, // Maximize/Restore
-                    ...(process.platform === 'darwin' ? [
-                        { type: 'separator' },
-                        { role: 'front' },
-                        { type: 'separator' },
-                        { role: 'window' }
-                    ] : [
-                        { label: 'Hide', click: () => mainWindow?.hide() } // Custom Hide for non-mac
-                    ])
-                ]
-            },
-            {
-                role: 'help',
-                submenu: [
-                    // Add relevant help links here if desired
-                    {
-                        label: 'Learn More (Placeholder)'
-                        // click: async () => { await shell.openExternal('https://electronjs.org') }
-                    }
-                ]
-            }
-        ];
+          ] : [
+            { role: 'delete' },
+            { type: 'separator' },
+            { role: 'selectAll' }
+          ])
+        ]
+      },
+      // { role: 'viewMenu' }
+      {
+        label: 'View',
+        submenu: [
+          { role: 'reload' },
+          { role: 'forceReload' },
+          { role: 'toggleDevTools' },
+          { type: 'separator' },
+          { role: 'resetZoom' },
+          { role: 'zoomIn' },
+          { role: 'zoomOut' },
+          { type: 'separator' },
+          { role: 'togglefullscreen' }
+        ]
+      },
+      // { role: 'windowMenu' }
+      {
+        label: 'Window',
+        submenu: [
+          { role: 'minimize' },
+          { role: 'zoom' }, // Maximize/Restore
+          ...(process.platform === 'darwin' ? [
+            { type: 'separator' },
+            { role: 'front' },
+            { type: 'separator' },
+            { role: 'window' }
+          ] : [
+            { label: 'Hide', click: () => mainWindow?.hide() } // Custom Hide for non-mac
+          ])
+        ]
+      },
+      {
+        role: 'help',
+        submenu: [
+          // Add relevant help links here if desired
+          {
+            label: 'Learn More (Placeholder)'
+            // click: async () => { await shell.openExternal('https://electronjs.org') }
+          }
+        ]
+      }
+    ];
 
         const menu = Menu.buildFromTemplate(menuTemplate);
         Menu.setApplicationMenu(menu);
@@ -645,11 +649,15 @@ if (!gotTheLock) {
         createTray();
         createOrShowMainWindow();
 
-        app.on('activate', function () {
-            if (BrowserWindow.getAllWindows().length === 0) createOrShowMainWindow();
-            else if (mainWindow) mainWindow.show();
-        });
+    app.on('activate', function () {
+      if (BrowserWindow.getAllWindows().length === 0) createOrShowMainWindow();
+      else if (mainWindow) mainWindow.show(); 
     });
+    } catch (error) {
+        console.error('Failed during startup:', error);
+        app.quit();
+    }
+  });
 
     app.on('window-all-closed', () => {
         if (process.platform !== 'darwin') {
