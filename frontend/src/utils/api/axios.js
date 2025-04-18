@@ -244,6 +244,12 @@ const flushPrivileges = () => {
     return api.post("/users/flush");
 };
 
+const getGenAISuggestion = async (query) => {
+    return api.post("/genai/suggest", {
+        prompt: { query },
+    });
+};
+
 export {
     addColumns,
     addConstraint,
@@ -264,6 +270,7 @@ export {
     getConstraints,
     getDatabaseCode,
     getDatabaseDetails,
+    getGenAISuggestion,
     getPrivileges,
     getQueryExecuted,
     getTableCode,
