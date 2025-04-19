@@ -1,5 +1,5 @@
-import { getMySQLPool } from "../../db/mysqlPool.js";
-import MyError from "../../utils/error.js";
+import { getMySQLPool } from "../db/mysqlPool.js";
+import MyError from "../utils/error.js";
 
 const listUsersWithAccess = async () => {
     const pool = getMySQLPool();

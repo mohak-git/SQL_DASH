@@ -1,14 +1,11 @@
 import { memo, useEffect, useState } from "react";
 import {
-    FaTable,
+    FaDatabase,
     FaKey,
     FaLink,
-    FaFingerprint,
-    FaStar,
     FaSearch,
+    FaStar,
     FaTimes,
-    FaDatabase,
-    FaPlus,
 } from "react-icons/fa";
 import {
     FiColumns,
@@ -41,6 +38,11 @@ const ColumnItem = memo(
                     <div className="flex items-center gap-2 truncate">
                         {onSelect && (
                             <input
+                                title={
+                                    isPrimaryKey
+                                        ? "Primary key columns cannot be modified"
+                                        : "Select column"
+                                }
                                 type="checkbox"
                                 checked={selected}
                                 onChange={(e) => {
@@ -69,6 +71,15 @@ const ColumnItem = memo(
                                     ? "bg-yellow-700/40 text-yellow-400"
                                     : "bg-gray-700/40 text-gray-400"
                             }`}
+                            title={
+                                column.key === "PRI"
+                                    ? "Primary Key"
+                                    : column.key === "MUL"
+                                    ? "Foreign Key"
+                                    : column.key === "UNI"
+                                    ? "Unique Key"
+                                    : "Regular Column"
+                            }
                         >
                             {column.key === "PRI" ? (
                                 <FaKey className="text-xs" />
@@ -81,10 +92,18 @@ const ColumnItem = memo(
                             )}
                         </div>
                         <div className="flex flex-col min-w-0">
-                            <span className="text-sm font-medium text-gray-200 truncate">
+                            <span
+                                className="text-sm font-medium text-gray-200 truncate"
+                                title={column.name}
+                            >
                                 {column.name}
                             </span>
-                            <span className="text-xs text-gray-500 truncate">
+                            <span
+                                className="text-xs text-gray-500 truncate"
+                                title={`${column.type}${
+                                    column.length ? `(${column.length})` : ""
+                                }`}
+                            >
                                 {column.type}
                                 {column.length ? `(${column.length})` : ""}
                             </span>
@@ -97,12 +116,18 @@ const ColumnItem = memo(
                                     ? "bg-yellow-900/30 text-yellow-400"
                                     : "bg-green-900/30 text-green-400"
                             }`}
+                            title={
+                                column.nullable === "YES"
+                                    ? "This column allows NULL values"
+                                    : "This column does not allow NULL values"
+                            }
                         >
                             {column.nullable === "YES" ? "NULL" : "NOT NULL"}
                         </span>
 
                         {!isPrimaryKey && (
                             <button
+                                title="Delete this column"
                                 className={`p-1 rounded-md ${
                                     onSelect
                                         ? "invisible group-hover:visible text-gray-400 hover:text-red-400"
@@ -113,7 +138,6 @@ const ColumnItem = memo(
                                     onDelete([column.name]);
                                 }}
                                 disabled={isDeleting}
-                                title="Delete column"
                             >
                                 <FiTrash2 size={14} />
                             </button>
@@ -309,13 +333,19 @@ const ColumnsList = () => {
                         <FaDatabase className="text-blue-400" />
                         {tableName}
                     </h2>
-                    <span className="text-xs bg-blue-900/50 text-blue-300 px-2 py-1 rounded-full animate-pulse">
+                    <span
+                        title="Total Columns"
+                        className="text-xs bg-blue-900/50 text-blue-300 px-2 py-1 rounded-full animate-pulse"
+                    >
                         {loading ? "..." : tableDetails?.columns?.length || 0}
                     </span>
                 </div>
 
                 {/* Search Bar */}
-                <div className="relative mt-4 mb-3">
+                <div
+                    className="relative mt-4 mb-3"
+                    title="Type a column name to search for it"
+                >
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                         <FaSearch className="text-gray-400" />
                     </div>
@@ -413,6 +443,7 @@ const ColumnsList = () => {
                 {multiSelectMode ? (
                     <div className="flex gap-2">
                         <button
+                            title="Delete selected columns"
                             onClick={() => handleDeleteColumns(selectedColumns)}
                             disabled={
                                 actionLoading || selectedColumns.length === 0
@@ -429,6 +460,7 @@ const ColumnsList = () => {
                                 `(${selectedColumns.length})`}
                         </button>
                         <button
+                            title="Cancel column selection"
                             onClick={toggleMultiSelectMode}
                             className="flex items-center justify-center gap-2 px-3 py-2 bg-gray-700/50 hover:bg-gray-600/70 border border-gray-600 text-gray-300 rounded-md text-sm transition-all"
                         >
@@ -437,6 +469,7 @@ const ColumnsList = () => {
                     </div>
                 ) : (
                     <button
+                        title="Enable multi-column selection"
                         onClick={toggleMultiSelectMode}
                         className="flex items-center justify-center gap-2 w-full px-3 py-2 bg-gray-700/50 hover:bg-gray-600/70 border border-gray-600 text-gray-300 rounded-md text-sm transition-all"
                     >
@@ -446,6 +479,7 @@ const ColumnsList = () => {
 
                 <div className="flex gap-2">
                     <button
+                        title="Truncate this table (removes all rows but keeps structure)"
                         onClick={handleTruncateTable}
                         disabled={actionLoading}
                         className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-yellow-900/40 hover:bg-yellow-800/50 border border-yellow-800 text-yellow-300 hover:text-white rounded-md text-sm transition-all"
@@ -453,6 +487,7 @@ const ColumnsList = () => {
                         <FiCopy size={14} /> Truncate
                     </button>
                     <button
+                        title="Drop this table (completely removes it)"
                         onClick={handleDropTable}
                         disabled={actionLoading}
                         className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-red-900/40 hover:bg-red-800/50 border border-red-800 text-red-300 hover:text-white rounded-md text-sm transition-all"

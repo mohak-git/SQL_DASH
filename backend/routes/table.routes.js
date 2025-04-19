@@ -1,21 +1,23 @@
 import { Router } from "express";
 import {
-    handleViewTableData,
-    handleDropTable,
-    handleExportTable,
     handleAddColumns,
-    handleTruncateTable,
-    handleGetTableDetails,
+    handleAddConstraints,
     handleCreateTable,
     handleDeleteColumns,
-    handleAddConstraints,
+    handleDeleteDataFromTable,
     handleDropConstraints,
+    handleDropTable,
+    handleDumpDatabase,
+    handleExportTable,
     handleGetConstraints,
     handleGetTableCode,
+    handleGetTableDetails,
+    handleGetTableSchema,
     handleInsertDataIntoTable,
-    handleDeleteDataFromTable,
-    handleDumpDatabase,
     handleRenameTable,
+    handleTruncateTable,
+    handleUpdateDataInTable,
+    handleViewTableData,
 } from "../controller/table.controller.js";
 
 const router = Router({ mergeParams: true });
@@ -23,6 +25,7 @@ const router = Router({ mergeParams: true });
 router.get("/details", handleGetTableDetails);
 router.post("/create", handleCreateTable);
 router.get("/data", handleViewTableData);
+router.get("/schema", handleGetTableSchema);
 
 router.get("/code", handleGetTableCode);
 router.patch("/add-columns", handleAddColumns);
@@ -41,6 +44,7 @@ router.delete("/truncate", handleTruncateTable);
 router
     .route("/data-manipulate")
     .post(handleInsertDataIntoTable)
+    .patch(handleUpdateDataInTable)
     .delete(handleDeleteDataFromTable);
 
 router.route("/dump").get(handleDumpDatabase);

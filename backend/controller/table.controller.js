@@ -11,16 +11,24 @@ import {
     getTableCode,
     getTableConstraints,
     getTableDetails,
+    getTableSchema,
     insertDataIntoTable,
     renameTable,
     truncateTable,
+    updateDataInTable,
     viewTableData,
-} from "../services/database/tableOperations.service.js";
+} from "../services/tableOperations.service.js";
 import asyncHandler from "../utils/asyncHandler.js";
 
 const handleGetTableDetails = asyncHandler(async (req, res) => {
     const { dbName, tableName } = req.params;
     const result = await getTableDetails(dbName, tableName);
+    return res.status(200).json(result);
+});
+
+const handleGetTableSchema = asyncHandler(async (req, res) => {
+    const { dbName, tableName } = req.params;
+    const result = await getTableSchema(dbName, tableName);
     return res.status(200).json(result);
 });
 
@@ -103,6 +111,13 @@ const handleInsertDataIntoTable = asyncHandler(async (req, res) => {
     return res.status(201).json(result);
 });
 
+const handleUpdateDataInTable = asyncHandler(async (req, res) => {
+    const { dbName, tableName } = req.params;
+    const { data, conditions } = req.body;
+    const result = await updateDataInTable(dbName, tableName, data, conditions);
+    return res.status(200).json(result);
+});
+
 const handleDeleteDataFromTable = asyncHandler(async (req, res) => {
     const { dbName, tableName } = req.params;
     const { conditions } = req.body;
@@ -142,8 +157,10 @@ export {
     handleGetConstraints,
     handleGetTableCode,
     handleGetTableDetails,
+    handleGetTableSchema,
     handleInsertDataIntoTable,
-    handleTruncateTable,
-    handleViewTableData,
     handleRenameTable,
+    handleTruncateTable,
+    handleUpdateDataInTable,
+    handleViewTableData,
 };

@@ -1,6 +1,6 @@
-import { getMySQLPool } from "../../db/mysqlPool.js";
-import MyError from "../../utils/error.js";
-import runMysqldump from "../../utils/export.js";
+import { getMySQLPool } from "../db/mysqlPool.js";
+import MyError from "../utils/error.js";
+import runMysqldump from "../utils/export.js";
 
 const getTableDetails = async (dbName, tableName) => {
     if (!dbName) throw new MyError(400, "Database name is required");
@@ -59,6 +59,41 @@ const getTableDetails = async (dbName, tableName) => {
             collation: meta.TABLE_COLLATION,
             rowCount: meta.TABLE_ROWS,
             size: sizeInBytes / 1024,
+            columns: schema,
+        };
+    } catch (error) {
+        throw new MyError(
+            500,
+            `Failed to fetch table schema: ${error.message}`,
+        );
+    }
+};
+
+const getTableSchema = async (dbName, tableName) => {
+    if (!dbName) throw new MyError(400, "Database name is required");
+    if (!tableName) throw new MyError(400, "Table name is required");
+    try {
+        const pool = getMySQLPool();
+        const [dbExists] = await pool.query(
+            `SELECT SCHEMA_NAME FROM information_schema.SCHEMATA WHERE SCHEMA_NAME =?`,
+            [dbName],
+        );
+        if (dbExists.length === 0)
+            throw new MyError(404, `Database '${dbName}' does not exist`);
+
+        const [rows] = await pool.query(`DESC ${dbName}.${tableName}`);
+
+        const schema = rows.map((col) => ({
+            name: col.Field,
+            type: col.Type,
+            nullable: col.Null === "YES",
+            key: col.Key,
+            default: col.Default,
+            extra: col.Extra,
+        }));
+        return {
+            success: true,
+            message: `Table schema for '${tableName}' in database '${dbName}'`,
             columns: schema,
         };
     } catch (error) {
@@ -596,6 +631,55 @@ const insertDataIntoTable = async (dbName, tableName, data) => {
     }
 };
 
+const updateDataInTable = async (dbName, tableName, oldData, newData) => {
+    if (
+        !dbName ||
+        !tableName ||
+        typeof oldData !== "object" ||
+        typeof newData !== "object" ||
+        Object.keys(oldData).length === 0 ||
+        Object.keys(newData).length === 0
+    )
+        throw new MyError(
+            400,
+            "dbName, tableName, and non-empty oldData and newData objects are required",
+        );
+
+    try {
+        const pool = getMySQLPool();
+
+        const updates = [];
+        for (const key in newData)
+            if (newData[key] !== oldData[key])
+                updates.push(`\`${key}\` = ${pool.escape(newData[key])}`);
+
+        if (updates.length === 0) {
+            return {
+                success: true,
+                message: "No changes detected. Nothing to update.",
+            };
+        }
+
+        const conditions = Object.entries(oldData).map(
+            ([col, val]) => `\`${col}\` = ${pool.escape(val)}`,
+        );
+
+        const sql = `
+            UPDATE \`${dbName}\`.\`${tableName}\`
+            SET ${updates.join(", ")}
+            WHERE ${conditions.join(" AND ")}
+        `;
+
+        const [result] = await pool.query(sql);
+        return {
+            success: true,
+            message: `Updated ${result.affectedRows} row(s) in '${tableName}'`,
+        };
+    } catch (error) {
+        throw new MyError(500, `Failed to update rows: ${error.message}`);
+    }
+};
+
 const deleteDataFromTable = async (dbName, tableName, rowConditions) => {
     if (
         !dbName ||
@@ -698,8 +782,10 @@ export {
     getTableCode,
     getTableConstraints,
     getTableDetails,
+    getTableSchema,
     insertDataIntoTable,
     renameTable,
     truncateTable,
+    updateDataInTable,
     viewTableData,
 };

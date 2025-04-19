@@ -479,11 +479,21 @@ function openBrowser(serverType) {
     }
 }
 
+// function openConfigFile(serverType) {
+//     const configPath = configManager.getConfigPath(serverType);
+//     shell.openPath(configPath).catch(err => {
+//         console.error(`Failed to open config file ${configPath}:`, err);
+//         logToRenderer('system', `Failed to open config file: ${configPath}`);
+//     });
+// }
 function openConfigFile(serverType) {
     const configPath = configManager.getConfigPath(serverType);
-    shell.openPath(configPath).catch(err => {
-        console.error(`Failed to open config file ${configPath}:`, err);
-        logToRenderer('system', `Failed to open config file: ${configPath}`);
+    
+    exec(`notepad "${configPath}"`, (err) => {
+        if (err) {
+            console.error(`Failed to open config file ${configPath} in Notepad:`, err);
+            logToRenderer('system', `Failed to open config file in Notepad: ${configPath}`);
+        }
     });
 }
 

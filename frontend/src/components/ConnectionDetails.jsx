@@ -76,7 +76,6 @@ const MetricCard = ({
             <div className="flex items-center gap-2 text-gray-400 uppercase tracking-wider text-xs">
                 {icon}
                 {title}
-                {tooltip && <FiInfo className="text-xs opacity-60 ml-auto" />}
             </div>
             <p
                 className="text-2xl font-bold text-white mt-1 transition-transform duration-300"
@@ -543,7 +542,10 @@ const ConnectionDetails = () => {
                     </div>
                 </div>
 
-                <div className="flex items-center gap-3 px-4 py-2 rounded-lg bg-blue-900/30 border border-blue-700/50 hover:border-blue-500/50 transition-all duration-300">
+                <div
+                    title="System Time"
+                    className="flex items-center gap-3 px-4 py-2 rounded-lg bg-blue-900/30 border border-blue-700/50 hover:border-blue-500/50 transition-all duration-300"
+                >
                     <AnimatedClock date={date} setDate={setDate} />
                     <span className="text-white font-mono text-sm">
                         {date?.toLocaleString()}

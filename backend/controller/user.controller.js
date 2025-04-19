@@ -6,7 +6,7 @@ import {
     listUsersWithAccess,
     removeUser,
     revokeUserPrivileges,
-} from "../services/database/userPrivileges.service.js";
+} from "../services/userPrivileges.service.js";
 
 import asyncHandler from "../utils/asyncHandler.js";
 import MyError from "../utils/error.js";
