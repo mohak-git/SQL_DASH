@@ -631,6 +631,55 @@ const insertDataIntoTable = async (dbName, tableName, data) => {
     }
 };
 
+const updateDataInTable = async (dbName, tableName, oldData, newData) => {
+    if (
+        !dbName ||
+        !tableName ||
+        typeof oldData !== "object" ||
+        typeof newData !== "object" ||
+        Object.keys(oldData).length === 0 ||
+        Object.keys(newData).length === 0
+    )
+        throw new MyError(
+            400,
+            "dbName, tableName, and non-empty oldData and newData objects are required",
+        );
+
+    try {
+        const pool = getMySQLPool();
+
+        const updates = [];
+        for (const key in newData)
+            if (newData[key] !== oldData[key])
+                updates.push(`\`${key}\` = ${pool.escape(newData[key])}`);
+
+        if (updates.length === 0) {
+            return {
+                success: true,
+                message: "No changes detected. Nothing to update.",
+            };
+        }
+
+        const conditions = Object.entries(oldData).map(
+            ([col, val]) => `\`${col}\` = ${pool.escape(val)}`,
+        );
+
+        const sql = `
+            UPDATE \`${dbName}\`.\`${tableName}\`
+            SET ${updates.join(", ")}
+            WHERE ${conditions.join(" AND ")}
+        `;
+
+        const [result] = await pool.query(sql);
+        return {
+            success: true,
+            message: `Updated ${result.affectedRows} row(s) in '${tableName}'`,
+        };
+    } catch (error) {
+        throw new MyError(500, `Failed to update rows: ${error.message}`);
+    }
+};
+
 const deleteDataFromTable = async (dbName, tableName, rowConditions) => {
     if (
         !dbName ||
@@ -737,5 +786,6 @@ export {
     insertDataIntoTable,
     renameTable,
     truncateTable,
+    updateDataInTable,
     viewTableData,
 };

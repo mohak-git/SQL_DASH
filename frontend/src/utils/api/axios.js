@@ -174,6 +174,15 @@ const insertRow = (dbName, tableName, data) => {
     );
 };
 
+const updateRow = (dbName, tableName, data, conditions) => {
+    return api.patch(
+        `/db/table/${encodeURIComponent(dbName)}/${encodeURIComponent(
+            tableName,
+        )}/data-manipulate`,
+        { conditions, data },
+    );
+};
+
 const deleteRow = (dbName, tableName, data) => {
     return api.delete(
         `/db/table/${encodeURIComponent(dbName)}/${encodeURIComponent(
@@ -293,4 +302,5 @@ export {
     renameTable,
     revokePrivileges,
     truncateTable,
+    updateRow,
 };

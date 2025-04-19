@@ -1,21 +1,22 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useRef } from "react";
 import {
-    FaSort,
-    FaSortUp,
-    FaSortDown,
-    FaDatabase,
-    FaTrash,
     FaCheckSquare,
+    FaDatabase,
+    FaPlus,
+    FaSort,
+    FaSortDown,
+    FaSortUp,
     FaSquare,
-    FaCross,
     FaTimes,
+    FaTrash,
+    FaCheck,
+    FaPen,
 } from "react-icons/fa";
 import { useParams } from "react-router-dom";
 import { toast } from "react-toastify";
 import Error from "../ui/Error.jsx";
 import Loader from "../ui/Loader.jsx";
-import { getTableData, deleteRow } from "../utils/api/axios.js";
-import { FaPlus } from "react-icons/fa";
+import { deleteRow, getTableData, updateRow } from "../utils/api/axios.js";
 import AddDataModal from "./AddDataModal.jsx";
 
 const TableData = () => {
@@ -33,6 +34,11 @@ const TableData = () => {
     const [isDeleting, setIsDeleting] = useState(false);
     const [isSelectMultiple, setIsSelectMultiple] = useState(false);
 
+    // State for editing
+    const [editingCell, setEditingCell] = useState(null); // { rowIndex, colName }
+    const [editValue, setEditValue] = useState("");
+    const inputRef = useRef(null);
+
     const fetchTableData = async () => {
         try {
             setLoading(true);
@@ -42,6 +48,7 @@ const TableData = () => {
             setSelectedRows(new Set()); // Clear selection on refresh
             setIsSelectAll(false);
             setSortConfig({ key: null, direction: "default" });
+            setEditingCell(null); // Cancel any editing when data refreshes
             toast.success(
                 <span>
                     Loaded{" "}
@@ -193,6 +200,64 @@ const TableData = () => {
             setIsDeleting(false);
         }
     };
+
+    // Handle cell double click to start editing
+    const handleCellDoubleClick = (rowIndex, colName) => {
+        setEditingCell({ rowIndex, colName });
+        setEditValue(sortedData[rowIndex][colName] || "");
+    };
+
+    // Handle edit submission
+    const handleEditSubmit = async () => {
+        if (!editingCell) return;
+
+        const { rowIndex, colName } = editingCell;
+        const originalValue = sortedData[rowIndex][colName];
+
+        // Don't update if value hasn't changed
+        if (editValue === originalValue) {
+            setEditingCell(null);
+            return;
+        }
+
+        try {
+            const rowData = sortedData[rowIndex];
+            const updatedRow = { ...rowData, [colName]: editValue };
+
+            await updateRow(dbName, tableName, rowData, updatedRow);
+
+            toast.success(<span>Updated cell in row {rowIndex + 1}</span>);
+
+            await fetchTableData();
+        } catch (err) {
+            const errorMsg =
+                err.response?.data?.message || "Failed to update cell";
+            toast.error(<span>Error updating cell: {errorMsg}</span>, {
+                className: "bg-red-900/80 border border-red-700",
+            });
+            // Reset to original value on error
+            setEditValue(originalValue);
+        } finally {
+            setEditingCell(null);
+        }
+    };
+
+    // Handle key events in edit input
+    const handleKeyDown = (e) => {
+        if (e.key === "Enter") {
+            handleEditSubmit();
+        } else if (e.key === "Escape") {
+            setEditingCell(null);
+        }
+    };
+
+    // Focus input when editing starts
+    useEffect(() => {
+        if (editingCell && inputRef.current) {
+            inputRef.current.focus();
+            inputRef.current.select();
+        }
+    }, [editingCell]);
 
     useEffect(() => {
         fetchTableData();
@@ -366,25 +431,92 @@ const TableData = () => {
                                         <td
                                             key={`${rowIndex}-${col.name}`}
                                             className="px-6 py-3.5 whitespace-nowrap text-sm"
+                                            onDoubleClick={() =>
+                                                handleCellDoubleClick(
+                                                    rowIndex,
+                                                    col.name,
+                                                )
+                                            }
                                         >
-                                            <div className="flex items-center">
-                                                {row[col.name] !== null ? (
-                                                    <span
-                                                        className={`truncate max-w-[180px] md:max-w-[240px] xl:max-w-[320px] ${
-                                                            columnColors[
-                                                                colIndex %
-                                                                    columnColors.length
-                                                            ]
-                                                        }`}
+                                            {editingCell?.rowIndex ===
+                                                rowIndex &&
+                                            editingCell?.colName ===
+                                                col.name ? (
+                                                <div className="flex items-center gap-2">
+                                                    <input
+                                                        ref={inputRef}
+                                                        type="text"
+                                                        value={editValue}
+                                                        onChange={(e) =>
+                                                            setEditValue(
+                                                                e.target.value,
+                                                            )
+                                                        }
+                                                        onKeyDown={
+                                                            handleKeyDown
+                                                        }
+                                                        onBlur={
+                                                            handleEditSubmit
+                                                        }
+                                                        className="flex-1 px-2 py-1 bg-gray-700 border border-gray-600 rounded text-white focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                                    />
+                                                    <div className="flex gap-1">
+                                                        <button
+                                                            onClick={
+                                                                handleEditSubmit
+                                                            }
+                                                            className="p-1 text-green-400 hover:text-green-300"
+                                                            title="Confirm edit"
+                                                        >
+                                                            <FaCheck className="text-xs" />
+                                                        </button>
+                                                        <button
+                                                            onClick={() =>
+                                                                setEditingCell(
+                                                                    null,
+                                                                )
+                                                            }
+                                                            className="p-1 text-red-400 hover:text-red-300"
+                                                            title="Cancel edit"
+                                                        >
+                                                            <FaTimes className="text-xs" />
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            ) : (
+                                                <div className="flex items-center">
+                                                    {row[col.name] !== null ? (
+                                                        <span
+                                                            className={`truncate max-w-[180px] md:max-w-[240px] xl:max-w-[320px] ${
+                                                                columnColors[
+                                                                    colIndex %
+                                                                        columnColors.length
+                                                                ]
+                                                            }`}
+                                                        >
+                                                            {String(
+                                                                row[col.name],
+                                                            )}
+                                                        </span>
+                                                    ) : (
+                                                        <span className="text-gray-500/80 italic bg-gray-900/30 px-2 py-0.5 rounded text-xs">
+                                                            NULL
+                                                        </span>
+                                                    )}
+                                                    <button
+                                                        onClick={() =>
+                                                            handleCellDoubleClick(
+                                                                rowIndex,
+                                                                col.name,
+                                                            )
+                                                        }
+                                                        className="ml-2 opacity-0 group-hover:opacity-50 hover:opacity-100 text-gray-400 hover:text-yellow-400 transition-all p-1"
+                                                        title="Edit cell"
                                                     >
-                                                        {String(row[col.name])}
-                                                    </span>
-                                                ) : (
-                                                    <span className="text-gray-500/80 italic bg-gray-900/30 px-2 py-0.5 rounded text-xs">
-                                                        NULL
-                                                    </span>
-                                                )}
-                                            </div>
+                                                        <FaPen className="text-xs" />
+                                                    </button>
+                                                </div>
+                                            )}
                                         </td>
                                     ))}
                                     <td className="px-3 py-3.5 whitespace-nowrap">

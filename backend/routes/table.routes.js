@@ -16,6 +16,7 @@ import {
     handleInsertDataIntoTable,
     handleRenameTable,
     handleTruncateTable,
+    handleUpdateDataInTable,
     handleViewTableData,
 } from "../controller/table.controller.js";
 
@@ -43,6 +44,7 @@ router.delete("/truncate", handleTruncateTable);
 router
     .route("/data-manipulate")
     .post(handleInsertDataIntoTable)
+    .patch(handleUpdateDataInTable)
     .delete(handleDeleteDataFromTable);
 
 router.route("/dump").get(handleDumpDatabase);

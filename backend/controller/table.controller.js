@@ -15,6 +15,7 @@ import {
     insertDataIntoTable,
     renameTable,
     truncateTable,
+    updateDataInTable,
     viewTableData,
 } from "../services/tableOperations.service.js";
 import asyncHandler from "../utils/asyncHandler.js";
@@ -110,6 +111,13 @@ const handleInsertDataIntoTable = asyncHandler(async (req, res) => {
     return res.status(201).json(result);
 });
 
+const handleUpdateDataInTable = asyncHandler(async (req, res) => {
+    const { dbName, tableName } = req.params;
+    const { data, conditions } = req.body;
+    const result = await updateDataInTable(dbName, tableName, data, conditions);
+    return res.status(200).json(result);
+});
+
 const handleDeleteDataFromTable = asyncHandler(async (req, res) => {
     const { dbName, tableName } = req.params;
     const { conditions } = req.body;
@@ -153,5 +161,6 @@ export {
     handleInsertDataIntoTable,
     handleRenameTable,
     handleTruncateTable,
+    handleUpdateDataInTable,
     handleViewTableData,
 };
