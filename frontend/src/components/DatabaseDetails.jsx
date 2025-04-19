@@ -33,6 +33,7 @@ const InfoCard = ({
 
     return (
         <div
+            title={tooltip}
             className={`relative bg-gradient-to-br from-gray-800/40 to-gray-800/20 p-6 rounded-xl border border-gray-700 hover:border-blue-500/50 transition-all duration-300 ${
                 isHovered
                     ? "shadow-lg shadow-blue-500/10 scale-[1.02]"
@@ -41,20 +42,6 @@ const InfoCard = ({
             onMouseEnter={() => setIsHovered(true)}
             onMouseLeave={() => setIsHovered(false)}
         >
-            {/* Tooltip indicator */}
-            {tooltip && (
-                <div className="absolute top-2 right-2 text-xs text-gray-500">
-                    <FiInfo />
-                </div>
-            )}
-
-            {/* Tooltip content */}
-            {tooltip && isHovered && (
-                <div className="absolute -top-10 right-0 bg-gray-800 text-white text-xs px-2 py-1 rounded-md border border-gray-700 z-10">
-                    {tooltip}
-                </div>
-            )}
-
             <div className="flex items-center gap-3 mb-4">
                 <div
                     className={`p-2 rounded-full ${iconBg} transition-colors duration-300 group-hover:opacity-90`}
@@ -84,13 +71,7 @@ const InfoCard = ({
     );
 };
 
-const ProgressStat = ({
-    value,
-    max,
-    color = "blue",
-    label = "",
-    tooltip = "",
-}) => {
+const ProgressStat = ({ value, max, color = "blue", label = "" }) => {
     const percentage = Math.min(100, Math.max(0, (value / max) * 100));
     const colorClasses = {
         blue: "bg-blue-500",
@@ -111,11 +92,6 @@ const ProgressStat = ({
                     className={`${colorClasses[color]} h-2 rounded-full transition-all duration-500 ease-out`}
                     style={{ width: `${percentage}%` }}
                 ></div>
-                {tooltip && (
-                    <div className="absolute -top-6 right-0 bg-gray-800 text-white text-xs px-2 py-1 rounded-md border border-gray-700 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                        {tooltip}
-                    </div>
-                )}
             </div>
         </div>
     );
@@ -184,6 +160,7 @@ const DatabaseDetails = () => {
                 </div>
                 <button
                     onClick={fetchDatabaseInfo}
+                    title="Refresh Database Information"
                     disabled={refreshing}
                     className={`px-4 py-2 bg-gray-800 hover:bg-gray-700 border border-gray-700 rounded-lg text-white flex items-center gap-2 transition-all ${
                         refreshing

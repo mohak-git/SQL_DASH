@@ -1,6 +1,6 @@
-import { getMySQLPool } from "../../db/mysqlPool.js";
-import MyError from "../../utils/error.js";
-import runMysqldump from "../../utils/export.js";
+import { getMySQLPool } from "../db/mysqlPool.js";
+import MyError from "../utils/error.js";
+import runMysqldump from "../utils/export.js";
 
 const getTableDetails = async (dbName, tableName) => {
     if (!dbName) throw new MyError(400, "Database name is required");
@@ -59,6 +59,41 @@ const getTableDetails = async (dbName, tableName) => {
             collation: meta.TABLE_COLLATION,
             rowCount: meta.TABLE_ROWS,
             size: sizeInBytes / 1024,
+            columns: schema,
+        };
+    } catch (error) {
+        throw new MyError(
+            500,
+            `Failed to fetch table schema: ${error.message}`,
+        );
+    }
+};
+
+const getTableSchema = async (dbName, tableName) => {
+    if (!dbName) throw new MyError(400, "Database name is required");
+    if (!tableName) throw new MyError(400, "Table name is required");
+    try {
+        const pool = getMySQLPool();
+        const [dbExists] = await pool.query(
+            `SELECT SCHEMA_NAME FROM information_schema.SCHEMATA WHERE SCHEMA_NAME =?`,
+            [dbName],
+        );
+        if (dbExists.length === 0)
+            throw new MyError(404, `Database '${dbName}' does not exist`);
+
+        const [rows] = await pool.query(`DESC ${dbName}.${tableName}`);
+
+        const schema = rows.map((col) => ({
+            name: col.Field,
+            type: col.Type,
+            nullable: col.Null === "YES",
+            key: col.Key,
+            default: col.Default,
+            extra: col.Extra,
+        }));
+        return {
+            success: true,
+            message: `Table schema for '${tableName}' in database '${dbName}'`,
             columns: schema,
         };
     } catch (error) {
@@ -698,6 +733,7 @@ export {
     getTableCode,
     getTableConstraints,
     getTableDetails,
+    getTableSchema,
     insertDataIntoTable,
     renameTable,
     truncateTable,

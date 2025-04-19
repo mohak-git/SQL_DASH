@@ -1,4 +1,4 @@
-import { getCodeSuggestion } from "../services/database/genai.service.js";
+import { getCodeSuggestion } from "../services/genai.service.js";
 import asyncHandler from "../utils/asyncHandler.js";
 export const handleGetCodeSuggestions = asyncHandler(async (req, res) => {
     const { prompt } = req.body;

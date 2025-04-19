@@ -98,6 +98,14 @@ const getTableData = (dbName, tableName) => {
     );
 };
 
+const getTableSchema = (dbName, tableName) => {
+    return api.get(
+        `/db/table/${encodeURIComponent(dbName)}/${encodeURIComponent(
+            tableName,
+        )}/schema`,
+    );
+};
+
 const truncateTable = (dbName, tableName) => {
     return api.delete(
         `db/table/${encodeURIComponent(dbName)}/${encodeURIComponent(
@@ -244,10 +252,10 @@ const flushPrivileges = () => {
     return api.post("/users/flush");
 };
 
-const getGenAISuggestion = async (query) => {
-    return api.post("/genai/suggest", {
-        prompt: { query },
-    });
+const getGenAISuggestion = (code, tableSchema = null) => {
+    const prompt = { query: code };
+    if (tableSchema) prompt.schema = JSON.stringify(tableSchema);
+    return api.post("/genai/suggest", { prompt });
 };
 
 export {
@@ -277,6 +285,7 @@ export {
     getTableData,
     getTableDetails,
     getTables,
+    getTableSchema,
     getUsers,
     grantPrivileges,
     insertRow,

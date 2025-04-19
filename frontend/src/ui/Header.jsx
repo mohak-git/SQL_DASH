@@ -45,6 +45,7 @@ const Header = () => {
         <div className="flex justify-between items-center w-full px-4 py-2  border-b border-slate-700">
             <div className="flex items-center gap-4">
                 <button
+                    title="Go back"
                     onClick={() => navigate(-1)}
                     className="flex items-center px-4 py-2 rounded-md text-cyan-500 bg-slate-700 border border-sky-400 hover:bg-slate-600 transition-all duration-200 hover:scale-105 active:scale-95"
                 >
@@ -195,8 +196,7 @@ const Header = () => {
                                                     Current DB
                                                 </p>
                                                 <p className="text-white">
-                                                    {dbName ||
-                                                        "None"}
+                                                    {dbName || "None"}
                                                 </p>
                                             </div>
                                         </div>

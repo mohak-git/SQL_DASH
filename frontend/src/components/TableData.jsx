@@ -25,7 +25,7 @@ const TableData = () => {
     const [error, setError] = useState(null);
     const [sortConfig, setSortConfig] = useState({
         key: null,
-        direction: "asc",
+        direction: "default",
     });
     const [showAddModal, setShowAddModal] = useState(false);
     const [selectedRows, setSelectedRows] = useState(new Set());
@@ -41,6 +41,7 @@ const TableData = () => {
             setTableData(data);
             setSelectedRows(new Set()); // Clear selection on refresh
             setIsSelectAll(false);
+            setSortConfig({ key: null, direction: "default" });
             toast.success(
                 <span>
                     Loaded{" "}
@@ -73,15 +74,25 @@ const TableData = () => {
     const handleAddSuccess = () => fetchTableData();
 
     const requestSort = (key) => {
-        setSortConfig((prev) => ({
-            key,
-            direction:
-                prev.key === key && prev.direction === "asc" ? "desc" : "asc",
-        }));
+        setSortConfig((prev) => {
+            if (prev.key !== key) {
+                return { key, direction: "asc" };
+            }
+
+            // Cycle through the sorting states: asc -> desc -> default -> asc...
+            if (prev.direction === "asc") {
+                return { key, direction: "desc" };
+            } else if (prev.direction === "desc") {
+                return { key: null, direction: "default" };
+            } else {
+                return { key, direction: "asc" };
+            }
+        });
     };
 
     const sortedData = useMemo(() => {
-        if (!sortConfig.key) return tableData.data;
+        if (!sortConfig.key || sortConfig.direction === "default")
+            return tableData.data;
 
         return [...tableData.data].sort((a, b) => {
             const aValue = a[sortConfig.key];
@@ -304,8 +315,11 @@ const TableData = () => {
                                                 sortConfig.direction ===
                                                 "asc" ? (
                                                     <FaSortUp className="text-blue-400 text-sm ml-1.5" />
-                                                ) : (
+                                                ) : sortConfig.direction ===
+                                                  "desc" ? (
                                                     <FaSortDown className="text-blue-400 text-sm ml-1.5" />
+                                                ) : (
+                                                    <FaSort className="text-gray-400 text-sm ml-1.5" />
                                                 )
                                             ) : (
                                                 <FaSort className="text-gray-500/60 text-xs ml-1.5 group-hover:text-gray-400 transition-colors" />
@@ -429,9 +443,13 @@ const TableData = () => {
                 <span>
                     Sorted by:{" "}
                     {sortConfig.key ? (
-                        <span className="text-blue-300">
-                            {sortConfig.key} ({sortConfig.direction})
-                        </span>
+                        sortConfig.direction === "default" ? (
+                            <span className="text-gray-400">Natural order</span>
+                        ) : (
+                            <span className="text-blue-300">
+                                {sortConfig.key} ({sortConfig.direction})
+                            </span>
+                        )
                     ) : (
                         <span className="text-gray-400">Natural order</span>
                     )}

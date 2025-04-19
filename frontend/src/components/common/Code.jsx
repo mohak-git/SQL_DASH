@@ -14,6 +14,7 @@ import CopyButton from "./CopyButton";
 
 // Custom Button Component
 const Button = ({
+    title,
     children,
     onClick,
     className = "",
@@ -23,6 +24,7 @@ const Button = ({
 }) => {
     return (
         <button
+            title={title}
             className={`px-4 py-2 rounded-md font-medium transition-colors flex items-center gap-2 ${
                 disabled
                     ? "bg-gray-500 cursor-not-allowed"
@@ -89,7 +91,7 @@ const TableCode = ({ tableName, code }) => {
 const PathInput = ({ value, onChange }) => {
     const handleSelectPath = async () => {
         try {
-            const selectedPath = "/path/to/exports";
+            const selectedPath = "C:/Users/hp/Desktop";
             onChange(selectedPath);
         } catch (err) {
             console.error("Error selecting path:", err);
@@ -103,7 +105,7 @@ const PathInput = ({ value, onChange }) => {
                 value={value}
                 onChange={(e) => onChange(e.target.value)}
                 className="w-full px-3 py-2 pr-10 bg-gray-700 border border-gray-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="Export path (e.g., /path/to/exports)"
+                placeholder="Export path (e.g., C:/Users/user_name/Desktop)"
             />
             <button
                 onClick={handleSelectPath}
@@ -213,7 +215,11 @@ const Code = () => {
                         </>
                     )}
                 </div>
-                <Button onClick={handleExportClick} icon={SiMysql}>
+                <Button
+                    onClick={handleExportClick}
+                    icon={SiMysql}
+                    title={"Export entire database into a MySQL file"}
+                >
                     Export SQL
                 </Button>
             </div>
@@ -289,6 +295,7 @@ const Code = () => {
 
                             <div className="flex justify-end gap-3 pt-2">
                                 <Button
+                                    title={"Cancel export"}
                                     onClick={() => {
                                         setShowExportModal(false);
                                         setPassword("");
@@ -299,6 +306,11 @@ const Code = () => {
                                     Cancel
                                 </Button>
                                 <Button
+                                    title={
+                                        !password
+                                            ? "Enter password to export"
+                                            : "Download file"
+                                    }
                                     onClick={handleExportSubmit}
                                     disabled={!password || exportLoading}
                                     icon={exportLoading ? undefined : GrMysql}

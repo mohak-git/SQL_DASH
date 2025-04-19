@@ -1,5 +1,5 @@
 /* eslint-disable no-unused-vars */
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import {
     FiUserPlus,
     FiTrash2,
@@ -36,6 +36,7 @@ const MySQLUserManager = () => {
         password: "",
         confirmPassword: "",
     });
+    const [passwordError, setPasswordError] = useState(null);
 
     const [selectedUser, setSelectedUser] = useState(null);
     const [userGrants, setUserGrants] = useState([]);
@@ -135,16 +136,39 @@ const MySQLUserManager = () => {
 
     const handleCreateUser = async () => {
         if (newUser.password !== newUser.confirmPassword) {
-            setError("Passwords don't match");
+            setPasswordError("Passwords don't match");
             return;
         }
+
+        if (!newUser.password) {
+            setPasswordError("Password cannot be empty");
+            return;
+        }
+
+        setPasswordError(null);
 
         try {
             await addUser(newUser.username, newUser.host, newUser.password);
             setShowCreateModal(false);
+            setNewUser({
+                username: "",
+                host: "%",
+                password: "",
+                confirmPassword: "",
+            });
             fetchUsers();
         } catch (err) {
-            setError(err.message);
+            setPasswordError(err.message);
+        }
+    };
+
+    const validatePassword = () => {
+        if (newUser.password !== newUser.confirmPassword) {
+            setPasswordError("Passwords don't match");
+        } else if (!newUser.password) {
+            setPasswordError("Password cannot be empty");
+        } else {
+            setPasswordError(null);
         }
     };
 
@@ -244,6 +268,10 @@ const MySQLUserManager = () => {
         fetchUsers();
     }, []);
 
+    useEffect(() => {
+        if (showCreateModal) validatePassword();
+    }, [newUser.password, newUser.confirmPassword, showCreateModal]);
+
     return (
         <div className="space-y-6">
             <div className="flex flex-col sm:flex-row justify-between gap-4">
@@ -264,7 +292,7 @@ const MySQLUserManager = () => {
                 <div className="flex gap-3">
                     <button
                         onClick={fetchUsers}
-                        className="flex items-center gap-2 px-4 py-1 rounded-lg bg-blue-900/30 border border-blue-700/50 text-blue-100 hover:bg-blue-900/50 hover:border-blue-500/50 hover:text-white transition-all duration-300"
+                        className="flex mt-2 items-center h-12 justify-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white text-sm font-medium rounded-md transition-all duration-300 shadow-md hover:scale-[1.02]"
                     >
                         <FiRefreshCw
                             className={`${loading ? "animate-spin" : ""}`}
@@ -272,15 +300,17 @@ const MySQLUserManager = () => {
                         Refresh
                     </button>
                     <button
+                        title="Refresh MySQL user permissions"
                         onClick={handleFlushPrivileges}
-                        className="flex items-center gap-2 px-4 py-1 rounded-lg bg-purple-900/30 border border-purple-700/50 text-purple-100 hover:bg-purple-900/50 hover:border-purple-500/50 hover:text-white transition-all duration-300"
+                        className="flex mt-2 items-center h-12 justify-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-600 to-purple-500 hover:from-purple-500 hover:to-purple-400 text-white text-sm font-medium rounded-md transition-all duration-300 shadow-md hover:scale-[1.02]"
                     >
                         <FiLock />
                         Flush Privileges
                     </button>
                     <button
+                        title={loading ? "Loading..." : "Add New User"}
                         onClick={() => setShowCreateModal(true)}
-                        className="flex items-center gap-2 px-4 py-1 rounded-lg bg-green-900/30 border border-green-700/50 text-green-100 hover:bg-green-900/50 hover:border-green-500/50 hover:text-white transition-all duration-300"
+                        className="flex mt-2 items-center h-12 justify-center gap-2 px-4 py-2 bg-gradient-to-r from-pink-600 to-pink-500 hover:from-pink-500 hover:to-pink-400 text-white text-sm font-medium rounded-md transition-all duration-300 shadow-md hover:scale-[1.02]"
                     >
                         <FiUserPlus />
                         Create User
@@ -332,7 +362,7 @@ const MySQLUserManager = () => {
                                                 {user.host}
                                             </td>
                                             <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-400 flex justify-center items-center">
-                                                <div className="flex gap-2">
+                                                <div className="flex gap-10">
                                                     <button
                                                         onClick={() => {
                                                             setSelectedUser(
@@ -363,7 +393,7 @@ const MySQLUserManager = () => {
                                                                 true,
                                                             );
                                                         }}
-                                                        className="p-2 rounded-md bg-green-900/20 border border-green-700/50 text-green-400 hover:bg-green-900/30 hover:border-green-500/50 hover:text-green-300 transition-all duration-200"
+                                                        className="p-2 rounded-md bg-purple-900/20 border border-purple-700/50 text-purple-400 hover:bg-purple-900/30 hover:border-purple-500/50 hover:text-purple-300 transition-all duration-200"
                                                         title="Grant Privileges"
                                                     >
                                                         <FiKey />
@@ -410,7 +440,10 @@ const MySQLUserManager = () => {
                                     Create New User
                                 </h2>
                                 <button
-                                    onClick={() => setShowCreateModal(false)}
+                                    onClick={() => {
+                                        setShowCreateModal(false);
+                                        setPasswordError(null);
+                                    }}
                                     className="text-gray-400 hover:text-white transition-colors duration-200"
                                 >
                                     <FiX />
@@ -467,12 +500,13 @@ const MySQLUserManager = () => {
                                         type="password"
                                         className="w-full px-3 py-2 bg-gray-700/50 border border-gray-600/50 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 text-white transition-all duration-200"
                                         value={newUser.password}
-                                        onChange={(e) =>
+                                        onChange={(e) => {
                                             setNewUser({
                                                 ...newUser,
                                                 password: e.target.value,
-                                            })
-                                        }
+                                            });
+                                            validatePassword();
+                                        }}
                                     />
                                 </div>
 
@@ -484,26 +518,43 @@ const MySQLUserManager = () => {
                                         type="password"
                                         className="w-full px-3 py-2 bg-gray-700/50 border border-gray-600/50 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 text-white transition-all duration-200"
                                         value={newUser.confirmPassword}
-                                        onChange={(e) =>
+                                        onChange={(e) => {
                                             setNewUser({
                                                 ...newUser,
                                                 confirmPassword: e.target.value,
-                                            })
-                                        }
+                                            });
+                                            validatePassword();
+                                        }}
                                     />
+                                    {passwordError && (
+                                        <div className="mt-1 text-sm text-red-400 flex items-center gap-1">
+                                            <FiX className="flex-shrink-0" />
+                                            {passwordError}
+                                        </div>
+                                    )}
                                 </div>
                             </div>
 
                             <div className="mt-6 flex justify-end gap-3">
                                 <button
-                                    onClick={() => setShowCreateModal(false)}
+                                    title="Close without saving changes"
+                                    onClick={() => {
+                                        setShowCreateModal(false);
+                                        setPasswordError(null);
+                                    }}
                                     className="px-4 py-2 rounded-md bg-gray-700/50 border border-gray-600/50 text-gray-300 hover:bg-gray-700 hover:text-white transition-all duration-200"
                                 >
                                     Cancel
                                 </button>
                                 <button
+                                    title="Create User with given credentials"
                                     onClick={handleCreateUser}
-                                    className="px-4 py-2 rounded-md bg-blue-600/90 border border-blue-500/50 text-white hover:bg-blue-600 hover:border-blue-400/50 transition-all duration-200"
+                                    disabled={!!passwordError}
+                                    className={`px-4 py-2 rounded-md bg-blue-600/90 border border-blue-500/50 text-white hover:bg-blue-600 hover:border-blue-400/50 transition-all duration-200 ${
+                                        passwordError
+                                            ? "opacity-50 cursor-not-allowed"
+                                            : ""
+                                    }`}
                                 >
                                     Create User
                                 </button>
@@ -582,22 +633,24 @@ const MySQLUserManager = () => {
 
                             <div className="mt-6 flex justify-end gap-3">
                                 <button
+                                    title="Revoke privileges on this user"
                                     onClick={() => {
                                         setActionType("revoke");
                                         setShowGrantsModal(false);
                                         setShowPrivilegesModal(true);
                                     }}
-                                    className="px-4 py-2 rounded-md bg-red-600/90 border border-red-500/50 text-white hover:bg-red-600 hover:border-red-400/50 transition-all duration-200 flex items-center gap-2"
+                                    className="px-4 py-2 rounded-md bg-red-600/50 border border-red-500/30 text-white hover:bg-red-600/70 hover:border-red-400/30 transition-all duration-200 flex items-center gap-2"
                                 >
                                     <FiKey /> Revoke Privileges
                                 </button>
                                 <button
+                                    title="Grant privileges on this user"
                                     onClick={() => {
                                         setActionType("grant");
                                         setShowGrantsModal(false);
                                         setShowPrivilegesModal(true);
                                     }}
-                                    className="px-4 py-2 rounded-md bg-green-600/90 border border-green-500/50 text-white hover:bg-green-600 hover:border-green-400/50 transition-all duration-200 flex items-center gap-2"
+                                    className="px-4 py-2 rounded-md bg-green-600/50 border border-green-500/30 text-white hover:bg-green-600/70 hover:border-green-400/30 transition-all duration-200 flex items-center gap-2"
                                 >
                                     <FiKey /> Grant Privileges
                                 </button>
@@ -740,12 +793,27 @@ const MySQLUserManager = () => {
                             </div>
 
                             <div className="mt-6 flex justify-between items-center">
-                                <div className="text-sm text-gray-400">
-                                    Current scope: {privileges.dbName}.
-                                    {privileges.tableName}
+                                <div className="flex flex-col">
+                                    <div
+                                        className={`text-sm font-medium mb-1 ${
+                                            actionType === "grant"
+                                                ? "text-green-400"
+                                                : "text-red-400"
+                                        }`}
+                                    >
+                                        Note : Selected Privileges will be
+                                        {actionType === "grant"
+                                            ? " granted"
+                                            : " revoked"}
+                                    </div>
+                                    <div className="text-sm text-gray-400">
+                                        Current scope: {privileges.dbName}.
+                                        {privileges.tableName}
+                                    </div>
                                 </div>
                                 <div className="flex gap-3">
                                     <button
+                                        title="Close without saving changes"
                                         onClick={() =>
                                             setShowPrivilegesModal(false)
                                         }
@@ -754,6 +822,11 @@ const MySQLUserManager = () => {
                                         Cancel
                                     </button>
                                     <button
+                                        title={
+                                            actionType === "grant"
+                                                ? "Grant selected privileges to selected users"
+                                                : "Revoke selected privileges from selected users"
+                                        }
                                         onClick={handlePrivilegeAction}
                                         disabled={
                                             privileges.selectedPrivileges

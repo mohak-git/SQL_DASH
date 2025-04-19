@@ -8,6 +8,8 @@ import {
     FiDatabase,
     FiLoader,
     FiPlay,
+    FiRefreshCcw,
+    FiRefreshCw,
     FiRotateCcw,
     FiRotateCw,
     FiTerminal,
@@ -19,7 +21,11 @@ import { useParams } from "react-router-dom";
 import { toast } from "react-toastify";
 import "../../monacoSetup.js";
 import Error from "../ui/Error.jsx";
-import { getGenAISuggestion, getQueryExecuted } from "../utils/api/axios.js";
+import {
+    getGenAISuggestion,
+    getQueryExecuted,
+    getTableSchema,
+} from "../utils/api/axios.js";
 import CopyButton from "./common/CopyButton.jsx";
 import debounce from "lodash.debounce";
 
@@ -170,19 +176,29 @@ const ResultsHeader = ({ error, executionTime, rowsAffected }) => (
 const ResultsTable = ({ fields, results }) => {
     const [sortConfig, setSortConfig] = useState({
         key: null,
-        direction: "asc",
+        direction: "default",
     });
 
     const requestSort = (key) => {
-        let direction = "asc";
-        if (sortConfig.key === key && sortConfig.direction === "asc") {
-            direction = "desc";
-        }
-        setSortConfig({ key, direction });
+        setSortConfig((prev) => {
+            if (prev.key !== key) {
+                return { key, direction: "asc" };
+            }
+
+            // Cycle through the sorting states: asc -> desc -> default -> asc...
+            if (prev.direction === "asc") {
+                return { key, direction: "desc" };
+            } else if (prev.direction === "desc") {
+                return { key: null, direction: "default" };
+            } else {
+                return { key, direction: "asc" };
+            }
+        });
     };
 
     const sortedResults = useMemo(() => {
-        if (!sortConfig.key) return results;
+        if (!sortConfig.key || sortConfig.direction === "default")
+            return results;
 
         return [...results].sort((a, b) => {
             const aValue = a[sortConfig.key];
@@ -222,10 +238,15 @@ const ResultsTable = ({ fields, results }) => {
                                                 className="text-blue-400 ml-1"
                                                 size={14}
                                             />
-                                        ) : (
+                                        ) : sortConfig.direction === "desc" ? (
                                             <FiChevronDown
                                                 className="text-blue-400 ml-1"
                                                 size={14}
+                                            />
+                                        ) : (
+                                            <FaSort
+                                                className="text-gray-400 ml-1"
+                                                size={12}
                                             />
                                         )
                                     ) : (
@@ -402,6 +423,20 @@ const QueryConsole = () => {
     const [isExecuting, setIsExecuting] = useState(false);
     const [queryResult, setQueryResult] = useState(null);
     const [error, setError] = useState(null);
+    const [tableSchema, setTableSchema] = useState([]);
+
+    useEffect(() => {
+        const fetchTableSchema = async (dbName, tableName) => {
+            try {
+                const { data } = await getTableSchema(dbName, tableName);
+                setTableSchema(data.columns || []);
+            } catch (err) {
+                console.error("Schema fetch error:", err);
+                setTableSchema([]);
+            }
+        };
+        if (dbName && tableName) fetchTableSchema(dbName, tableName);
+    }, [dbName, tableName]);
 
     useEffect(() => {
         if (!editorRef.current) return;
@@ -487,8 +522,8 @@ const QueryConsole = () => {
         const model = monacoRef.current.getModel();
 
         const handleChange = debounce(async () => {
-            const code = model.getValue().trim();
-            const suggestion = await fetchGenAISuggestion(code);
+            // const code = model.getValue().trim();
+            const suggestion = await fetchGenAISuggestion(monacoRef.current);
             if (suggestion) registerInlineSuggestion(model, suggestion);
             monacoRef.current.trigger(
                 "keyboard",
@@ -500,19 +535,21 @@ const QueryConsole = () => {
         model.onDidChangeContent(handleChange);
 
         return () => monacoRef.current?.dispose();
-    }, [dbName, tableName]);
+    }, [dbName, tableName, tableSchema]);
 
-    const fetchGenAISuggestion = async (code) => {
-        // const position = editor.getPosition();
-        // const currentLine = editor
-        //     .getModel()
-        //     .getLineContent(position.lineNumber)
-        //     .trim();
+    const fetchGenAISuggestion = async (editor) => {
+        const position = editor.getPosition();
+        const code = editor
+            .getModel()
+            .getLineContent(position.lineNumber)
+            .trim();
 
-        // if (!currentLine) return null;
+        if (!code) return null;
 
         try {
-            const { data } = await getGenAISuggestion(code);
+            const args = tableSchema ? [code, tableSchema] : [code];
+
+            const { data } = await getGenAISuggestion(...args);
             return data.response;
         } catch (err) {
             console.log(`Failed to fetch AI suggestion: ${err.message}`);
@@ -748,6 +785,14 @@ const QueryConsole = () => {
                         </div>
                     </div>
                 </div>
+                <button
+                title="Refresh in case editor is not visible"
+                    onClick={() => window.location.reload()}
+                    className="flex mt-2 items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white text-sm font-medium rounded-md transition-all duration-300 shadow-md hover:scale-[1.02]"
+                >
+                    <FiRefreshCw />
+                    Refresh
+                </button>
             </div>
 
             <div className="flex-grow bg-gray-850 rounded-xl border border-gray-700/50 overflow-hidden shadow-xl">

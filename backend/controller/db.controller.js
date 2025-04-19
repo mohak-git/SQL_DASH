@@ -1,4 +1,4 @@
-import { connectMySQL } from "../services/database/dbConnection.service.js";
+import { connectMySQL } from "../services/dbConnection.service.js";
 import {
     createDatabase,
     dropDatabase,
@@ -7,21 +7,8 @@ import {
     getDatabaseOverview,
     getDatabaseSchema,
     listMySQLDatabases,
-} from "../services/database/dbOperations.service.js";
+} from "../services/dbOperations.service.js";
 import asyncHandler from "../utils/asyncHandler.js";
-
-// const handleDBConnection = asyncHandler(async (req, res) => {
-//     const { environment, ...connectionParams } = req.body;
-
-//     if (!environment) throw new MyError(400, "Environment is required");
-
-//     let connectionInfo;
-//     if (environment === "oud")
-//         connectionInfo = await connectMySQL(connectionParams);
-//     else connectionInfo = await connectSQLite(connectionParams);
-
-//     return res.status(200).json(connectionInfo);
-// });
 
 const handleConnectMySQL = asyncHandler(async (req, res) => {
     const { host, port, user, password } = req.body;
@@ -76,7 +63,6 @@ export {
     handleDropDatabase,
     handleGetConnectionDetails,
     handleGetDatabaseCode,
-    // handleDBConnection,
     handleGetDatabaseOverview,
     handleGetDatabaseSchema,
     handleListDatabases,

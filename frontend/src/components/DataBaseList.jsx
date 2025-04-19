@@ -26,6 +26,7 @@ const DatabaseItem = memo(({ db, onClick, onDelete }) => {
 
     return (
         <div
+            title="Click to open the database or click the trash icon to delete."
             className={`
                 group relative p-3 px-4 transition-all duration-300 
                 hover:bg-gray-700/50 hover:shadow-lg rounded-md
@@ -161,11 +162,13 @@ const DatabaseModal = memo(({ type, state, onClose, onSubmit }) => {
                         onClick={onClose}
                         className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-all duration-300 hover:scale-[1.02]"
                         disabled={loading}
+                        title="Close without saving changes"
                     >
                         Cancel
                     </button>
                     <button
                         onClick={onSubmit}
+                        title={isCreate ? "Create database" : "Delete database"}
                         disabled={loading}
                         className={`px-6 py-2 bg-gradient-to-r ${
                             isCreate
@@ -377,13 +380,19 @@ const DataBaseList = () => {
                             <FaServer className="text-blue-400" />
                             Databases
                         </h2>
-                        <span className="text-xs bg-blue-900/50 text-blue-300 px-2 py-1 rounded-full animate-pulse">
+                        <span
+                            title="Total databases"
+                            className="text-xs bg-blue-900/50 text-blue-300 px-2 py-1 rounded-full animate-pulse"
+                        >
                             {loading ? "..." : databases.length}
                         </span>
                     </div>
 
                     {/* Search Bar */}
-                    <div className="relative mt-4 mb-3">
+                    <div
+                        className="relative mt-4 mb-3"
+                        title="Type a database name to search for it."
+                    >
                         <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                             <FaSearch className="text-gray-400" />
                         </div>
@@ -407,6 +416,7 @@ const DataBaseList = () => {
                     <button
                         onClick={openCreateModal}
                         className="flex mt-2 items-center justify-center gap-2 w-full px-3 py-2 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white text-sm font-medium rounded-md transition-all duration-300 shadow-md hover:scale-[1.02]"
+                        title={"Create a new database"}
                     >
                         <FaPlus
                             size={12}
@@ -448,6 +458,7 @@ const DataBaseList = () => {
                 <div className="p-4 border-t border-gray-700 sticky bottom-0 bg-gray-800 flex flex-col gap-3">
                     <button
                         onClick={() => navigate("/home/users")}
+                        title="Manage users and permissions."
                         className="flex items-center justify-center gap-2 w-full px-3 py-2 bg-gray-700 hover:bg-gray-600 text-gray-200 text-sm font-medium rounded-md transition-all duration-300 hover:scale-[1.02] group"
                     >
                         <FaUser
@@ -461,6 +472,7 @@ const DataBaseList = () => {
 
                     <button
                         onClick={() => navigate("/home/query-console")}
+                        title="Interact with your MySQL database using the command line."
                         className="flex items-center justify-center gap-2 w-full px-3 py-2 bg-gray-700 hover:bg-gray-600 text-gray-200 text-sm font-medium rounded-md transition-all duration-300 hover:scale-[1.02] group"
                     >
                         <FaTerminal
