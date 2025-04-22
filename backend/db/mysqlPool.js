@@ -30,4 +30,12 @@ const getMySQLPool = () => {
 
 const isPoolInitialized = () => !!pool;
 
-export { getMySQLPool, initMySQLPool, isPoolInitialized };
+const clearMySQLPool = () => {
+    if (pool) {
+        pool.end().catch(() => {});
+        pool = null;
+        console.log("MySQL pool cleared.");
+    }
+};
+
+export { getMySQLPool, initMySQLPool, isPoolInitialized, clearMySQLPool };

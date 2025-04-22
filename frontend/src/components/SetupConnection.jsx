@@ -135,6 +135,7 @@ const GetStartedSection = () => (
             </p>
             <Link
                 to="/db-connection"
+                replace={true}
                 className="inline-flex items-center gap-2 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white font-medium py-3 px-6 rounded-xl transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:ring-offset-2 focus:ring-offset-gray-850"
             >
                 <FiLink /> Connect to Database

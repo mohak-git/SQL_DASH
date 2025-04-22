@@ -125,16 +125,17 @@ const handleDeleteDataFromTable = asyncHandler(async (req, res) => {
     return res.status(200).json(result);
 });
 
-const handleDumpDatabase = asyncHandler(async (req, res) => {
+const handleDumpDatabase = asyncHandler(async (req, res, next) => {
     const { dbName, tableName } = req.params;
-    const { password, filepath } = req.query;
-    const exportedCode = await dumpDatabase(
-        dbName,
-        !tableName ? tableName : "",
-        password,
-        filepath,
+    const { password } = req.query;
+
+    const sql = await dumpDatabase(dbName, tableName, password);
+    res.setHeader(
+        "Content-Disposition",
+        `attachment; filename="${dbName}_${tableName || "dump"}.sql"`,
     );
-    return res.status(200).json(exportedCode);
+    res.setHeader("Content-Type", "application/sql");
+    res.send(sql);
 });
 
 const handleRenameTable = asyncHandler(async (req, res) => {

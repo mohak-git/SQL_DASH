@@ -718,7 +718,7 @@ const deleteDataFromTable = async (dbName, tableName, rowConditions) => {
     }
 };
 
-const dumpDatabase = async (dbname, tableName, password, path) => {
+const dumpDatabase = async (dbname, tableName, password) => {
     try {
         const pool = getMySQLPool();
         const connection = await pool.getConnection();
@@ -727,21 +727,22 @@ const dumpDatabase = async (dbname, tableName, password, path) => {
         const userHost = rows[0]["USER()"];
         const username = userHost.split("@")[0];
 
-        const result = await runMysqldump(
+        const sqlDump = await runMysqldump(
             dbname,
             tableName,
             username,
             password,
-            path,
         );
-        return {
-            success: true,
-            message: `Database '${dbname}' has been successfully dumped to '${result.filename}'`,
-        };
+
+        connection.release();
+
+        return sqlDump;
     } catch (err) {
         throw new MyError(500, `Failed to dump database: ${err.message}`);
     }
 };
+
+export default dumpDatabase;
 
 const renameTable = async (dbName, oldTableName, newTableName) => {
     if (

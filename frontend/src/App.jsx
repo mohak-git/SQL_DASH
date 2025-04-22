@@ -17,12 +17,24 @@ const App = () => {
             `${zoomLevel * 100}%`,
         );
 
+        // Saamsoong ka phone not allowed 😤
+        let isMobileDevice;
+        if (navigator.userAgentData)
+            isMobileDevice = navigator.userAgentData.mobile;
+        else
+            isMobileDevice =
+                /Mobi|Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+                    navigator.userAgent,
+                );
+
+        setIsAllowed(!isMobileDevice);
+
         // Chota screen not allowed 😤
-        const minWidth = 1200;
-        const checkScreen = () => setIsAllowed(window.innerWidth >= minWidth);
-        checkScreen();
-        window.addEventListener("resize", checkScreen);
-        return () => window.removeEventListener("resize", checkScreen);
+        // const minWidth = 768;
+        // const checkScreen = () => setIsAllowed(window.innerWidth >= minWidth);
+        // checkScreen();
+        // window.addEventListener("resize", checkScreen);
+        // return () => window.removeEventListener("resize", checkScreen);
     }, []);
 
     if (!isAllowed) return <ScreenSizeWarning />;

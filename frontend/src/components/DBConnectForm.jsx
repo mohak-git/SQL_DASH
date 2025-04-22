@@ -44,7 +44,10 @@ const DBConnectForm = () => {
             setConnectionStatus({ success: true, message: successMessage });
             toast.success(successMessage);
 
-            if (data?.connection?.type === "mysql") navigate("/home");
+            if (data?.connection?.type === "mysql")
+                navigate("/home", {
+                    replace: true,
+                });
             setdbConfig(dbConfig);
         } catch (error) {
             const errorMessage =

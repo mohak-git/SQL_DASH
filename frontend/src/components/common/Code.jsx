@@ -11,6 +11,7 @@ import {
     mySqlDump,
 } from "../../utils/api/axios";
 import CopyButton from "./CopyButton";
+import handleExportSQL from "../../utils/export/sql";
 
 // Custom Button Component
 const Button = ({
@@ -88,36 +89,6 @@ const TableCode = ({ tableName, code }) => {
     );
 };
 
-const PathInput = ({ value, onChange }) => {
-    const handleSelectPath = async () => {
-        try {
-            const selectedPath = "C:/Users/hp/Desktop";
-            onChange(selectedPath);
-        } catch (err) {
-            console.error("Error selecting path:", err);
-        }
-    };
-
-    return (
-        <div className="relative">
-            <input
-                type="text"
-                value={value}
-                onChange={(e) => onChange(e.target.value)}
-                className="w-full px-3 py-2 pr-10 bg-gray-700 border border-gray-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="Export path (e.g., C:/Users/user_name/Desktop)"
-            />
-            <button
-                onClick={handleSelectPath}
-                className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-blue-400 transition-colors"
-                title="Select path"
-            >
-                <FaFolderOpen />
-            </button>
-        </div>
-    );
-};
-
 const Code = () => {
     const { dbName, tableName } = useParams();
     const [code, setCode] = useState("");
@@ -173,7 +144,12 @@ const Code = () => {
             setExportLoading(true);
             setExportError(null);
 
-            await mySqlDump(dbName, tableName, password, exportPath);
+            const { data } = await mySqlDump(dbName, tableName, password);
+
+            const path = tableName
+                ? `${dbName}-${tableName}-data.sql`
+                : `${dbName}-data.sql`;
+            handleExportSQL(data, path);
 
             setExportSuccess(true);
             setTimeout(() => {
@@ -257,19 +233,6 @@ const Code = () => {
                     ) : (
                         <>
                             <div className="space-y-4">
-                                <div>
-                                    <label className="block text-gray-300 mb-1 text-sm font-medium">
-                                        Export Path
-                                    </label>
-                                    <PathInput
-                                        value={exportPath}
-                                        onChange={setExportPath}
-                                    />
-                                    <p className="text-xs text-gray-500 mt-1">
-                                        Leave empty for default location
-                                    </p>
-                                </div>
-
                                 <div>
                                     <label className="block text-gray-300 mb-1 text-sm font-medium">
                                         Database Password

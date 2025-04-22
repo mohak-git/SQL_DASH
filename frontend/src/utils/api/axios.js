@@ -196,14 +196,12 @@ const deleteRow = (dbName, tableName, data) => {
     );
 };
 
-const mySqlDump = (dbName, tableName, password, filepath) => {
+const mySqlDump = (dbName, tableName, password) => {
     return api.get(
         `/db/table/${encodeURIComponent(dbName)}/${encodeURIComponent(
             tableName,
         )}/dump`,
-        {
-            params: { password, filepath },
-        },
+        { params: { password }, responseType: "blob" },
     );
 };
 

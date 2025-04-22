@@ -1,36 +1,22 @@
 import { exec } from "child_process";
 import util from "util";
-import path from "path";
 import MyError from "./error.js";
+import { log } from "console";
 
 const execPromise = util.promisify(exec);
 
-const runMysqldump = async (
-    dbname,
-    tablename,
-    username,
-    password,
-    outputPath,
-) => {
-    const dumpCommandParts = [
-        `cmd /C mysqldump -u${username}`,
-        dbname,
-        tablename,
-        `> "${outputPath}\\${dbname}_${tablename || "dump"}.sql"`,
-    ];
-
-    const dumpCommand = dumpCommandParts.join(" ").trim();
-    
+const runMysqldump = async (dbname, tablename, username, password) => {
+    const dumpCommand =
+        tablename !== "undefined"
+            ? `mysqldump -u${username} ${dbname} ${tablename}`
+            : `mysqldump -u${username} ${dbname}`;
 
     const { stdout, stderr } = await execPromise(dumpCommand, {
         env: { ...process.env, MYSQL_PWD: password },
+        maxBuffer: 1024 * 1024 * 10,
     });
 
-    if (stderr)
-        throw new MyError(
-            500,
-            `An error occurred while running the MySQL dump command: ${stderr}`,
-        );
+    if (stderr) throw new MyError(500, `MySQL dump error: ${stderr}`);
 
     return stdout;
 };

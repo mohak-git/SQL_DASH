@@ -1,47 +1,23 @@
-import { useEffect, useState } from "react";
-import {
-    FaDesktop,
-    FaExclamationTriangle,
-    FaMobileAlt,
-    FaTabletAlt,
-} from "react-icons/fa";
-import { GiExpand } from "react-icons/gi";
+import { FaDesktop, FaExclamationTriangle, FaMobileAlt } from "react-icons/fa";
 
 const ScreenSizeWarning = () => {
-    const [windowSize, setWindowSize] = useState({
-        width: window.innerWidth,
-        height: window.innerHeight,
-    });
-
-    useEffect(() => {
-        const handleResize = () => {
-            setWindowSize({
-                width: window.innerWidth,
-                height: window.innerHeight,
-            });
-        };
-
-        handleResize();
-        window.addEventListener("resize", handleResize);
-        return () => window.removeEventListener("resize", handleResize);
-    }, []);
-
-    const deviceIcon =
-        windowSize.width < 640 ? (
-            <FaMobileAlt className="text-4xl group-hover:text-yellow-600" />
-        ) : windowSize.width < 768 ? (
-            <FaTabletAlt className="text-4xl group-hover:text-yellow-600" />
-        ) : (
-            <FaDesktop className="text-4xl group-hover:text-yellow-600" />
-        );
-
     const funnyMessages = [
-        "Who shrunk my browser? 🧐",
-        "Is this a screen for ants? 🐜",
-        "Congratulations on your new watch app! ⌚",
-        "Did you find the 'zoom out' button yet? 🔍",
-        "Even my grandma's flip phone is bigger 📞",
+        "This ain't no phone app, partner! 🤠",
+        "MySQL doesn't fit in your pocket 📱",
+        "Your phone is cute, but we need a workstation 💻",
+        "Please step away from the toaster-sized screen 🔍",
+        "This app eats RAM for breakfast — bring a real machine 🍽️",
+        "Sorry, but this isn't optimized for thumb-typing 👎",
+        "Not all heroes wear capes... some use full-size keyboards 🦸‍♂️⌨️",
+        "Try again on a device that doesn’t fit in a cereal box 📦",
+        "If your device fits in your hand, it's too small 🤏",
+        "Your device is in ‘too portable to compute’ mode 📵",
+        "Our app needs more pixels than that 👀",
+        "Mobile? Nah. We need horsepower, not horsepower wheels 🐎💻",
+        "Come back with a real device. Preferably one with fans. 🖥️💨",
+        "No phones allowed. It's a techie thing 🤓",
     ];
+
     const randomMessage =
         funnyMessages[Math.floor(Math.random() * funnyMessages.length)];
 
@@ -65,19 +41,17 @@ const ScreenSizeWarning = () => {
                     </h3>
 
                     <p className="text-gray-300 mb-4">
-                        This app needs some breathing room!
+                        This application requires a desktop or laptop
+                        environment
                         <br />
-                        Try rotating your device or using a larger screen.
+                        to properly interface with MySQL databases.
                     </p>
 
                     <div className="flex items-center justify-center gap-6 my-4">
                         <div className="flex flex-col items-center group">
                             <div className="p-3 bg-gray-700 rounded-lg group-hover:bg-yellow-400/20 transition-colors duration-300">
-                                {deviceIcon}
+                                <FaMobileAlt className="text-4xl text-gray-500 group-hover:text-yellow-600" />
                             </div>
-                            <span className="text-xs text-gray-400 mt-2 group-hover:text-yellow-300 transition-colors duration-300">
-                                {windowSize.width} × {windowSize.height}px
-                            </span>
                         </div>
 
                         <div className="text-gray-500 text-2xl animate-pulse">
@@ -86,16 +60,13 @@ const ScreenSizeWarning = () => {
 
                         <div className="flex flex-col items-center group">
                             <div className="p-3 bg-gray-700 rounded-lg group-hover:bg-green-400/10 transition-colors duration-300">
-                                <GiExpand className="text-4xl text-gray-500 group-hover:text-green-400 transition-colors duration-300" />
+                                <FaDesktop className="text-4xl text-gray-500 group-hover:text-green-400 transition-colors duration-300" />
                             </div>
-                            <span className="text-xs text-gray-400 mt-2 group-hover:text-green-300 transition-colors duration-300">
-                                Min 1200px
-                            </span>
                         </div>
                     </div>
 
                     <div className="text-xs text-yellow-400/70 mt-4 italic animate-pulse">
-                        Pro tip: Try standing further from your screen
+                        Please switch to a computer to access this application
                     </div>
                 </div>
             </div>
