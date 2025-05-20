@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import { FaInfoCircle, FaTrash } from "react-icons/fa";
+import { FaTrash, FaInfoCircle, FaCheck, FaTimes } from "react-icons/fa";
 import { dataTypes } from "./dataTypes.js";
 
 const ColumnForm = ({
@@ -9,81 +9,88 @@ const ColumnForm = ({
     removeColumn,
     isLastColumn,
     isNew,
+    focusOnMount,
 }) => {
-    const columnRef = useRef(null);
+    const nameInputRef = useRef(null);
 
     useEffect(() => {
-        if (isNew)
-            columnRef.current?.querySelector('input[type="text"]')?.focus();
-    }, [isNew]);
+        if (focusOnMount) {
+            nameInputRef.current?.focus();
+            nameInputRef.current?.select();
+        }
+    }, [focusOnMount]);
 
     return (
         <div
-            ref={columnRef}
-            className={`bg-gray-800/60 border rounded-xl p-5 mb-5 shadow-xl backdrop-blur-sm transition-all duration-300 ${
-                isNew
-                    ? "border-blue-500/60 ring-2 ring-blue-500/30 animate-pulse"
-                    : "border-gray-700/70 hover:border-gray-600/80"
-            }`}
+            className={`bg-gray-800/90 border rounded-xl p-4 mb-4 shadow-lg transition-all duration-200
+      ${
+          isNew
+              ? "border-blue-500/60 ring-2 ring-blue-500/20"
+              : "border-gray-700/50 hover:border-gray-600/60"
+      }`}
         >
-            {/* Header */}
-            <div className="flex justify-between items-start mb-4">
-                <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-lg bg-blue-500/10 flex items-center justify-center">
-                        <span className="text-blue-400 font-bold text-sm">
+            {/* Column Header */}
+            <div className="flex justify-between items-center mb-3 pb-2 border-b border-gray-700/40">
+                <div className="flex items-center gap-2">
+                    <div className="w-7 h-7 rounded-md bg-blue-500/10 flex items-center justify-center">
+                        <span className="text-blue-400 font-medium text-xs">
                             {index + 1}
                         </span>
                     </div>
-                    <h4 className="text-sm font-semibold text-gray-300">
-                        Column Configuration
-                    </h4>
+                    <h3 className="text-sm font-semibold text-gray-200">
+                        Column Settings
+                    </h3>
                 </div>
                 <button
                     onClick={() => removeColumn(index)}
-                    className={`flex items-center gap-2 text-xs px-3 py-1.5 rounded-lg transition-all ${
-                        isLastColumn
-                            ? "text-gray-500/80 bg-gray-800/20 border-gray-700/50 cursor-not-allowed"
-                            : "text-red-400/90 hover:text-white hover:bg-red-500/20 border-red-900/40 hover:border-red-700/60"
-                    } border`}
                     disabled={isLastColumn}
+                    className={`text-xs px-2.5 py-1 rounded-md transition-all flex items-center gap-1
+            ${
+                isLastColumn
+                    ? "text-gray-500 bg-gray-800/20 border-gray-700/40 cursor-not-allowed"
+                    : "text-red-400 hover:text-white bg-red-900/20 border-red-800/40 hover:bg-red-900/30"
+            } border`}
                     title={
                         isLastColumn
-                            ? "At least one column is required"
+                            ? "Cannot remove the last column"
                             : "Remove this column"
                     }
                 >
-                    <FaTrash className="w-3 h-3" />
+                    <FaTrash className="text-xs" />
                     <span>Remove</span>
                 </button>
             </div>
 
-            {/* Main Form Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-5">
-                {/* Column Name */}
-                <div className="space-y-1.5">
-                    <div className="flex items-center gap-1.5">
-                        <label className="block text-xs font-medium text-gray-300/90">
+            {/* Main Form Grid - Redesigned Card Layout */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {/* Column Name - Highlighted Card */}
+                <div className="bg-gray-750/80 p-3 rounded-lg border border-gray-700/50">
+                    <div className="flex items-center justify-between mb-1">
+                        <label className="text-xs font-medium text-gray-300/90 flex items-center gap-1">
                             Column Name
+                            <FaInfoCircle
+                                className="text-gray-500/80 hover:text-blue-400 cursor-help"
+                                title="Must be unique (letters, numbers, underscores)"
+                            />
                         </label>
-                        <FaInfoCircle
-                            className="text-gray-500/80 hover:text-blue-400 cursor-help text-xs"
-                            title="Must be unique within the table (letters, numbers, underscores)"
-                        />
                     </div>
                     <input
+                        ref={nameInputRef}
                         type="text"
                         value={column.name}
                         onChange={(e) =>
                             updateColumn(index, "name", e.target.value)
                         }
-                        className="w-full px-3 py-2 bg-gray-800/50 border border-gray-700/60 rounded-lg focus:ring-2 focus:ring-blue-500/60 focus:border-blue-500/70 outline-none transition text-white/90 text-sm placeholder-gray-500/60 hover:border-gray-600/70"
-                        placeholder="e.g. username, email"
+                        className="w-full px-3 py-1.5 bg-gray-700/60 border border-gray-600/50 rounded-md 
+              focus:ring-1 focus:ring-blue-500/60 focus:border-blue-500/70 outline-none 
+              text-white/90 text-sm placeholder-gray-500/60 transition-all"
+                        placeholder="e.g. username"
                     />
                 </div>
 
-                {/* Data Type */}
-                <div className="space-y-1.5">
-                    <label className="block text-xs font-medium text-gray-300/90">
+                {/* Data Type - Highlighted Card */}
+                <div className="bg-gray-750/80 p-3 rounded-lg border border-gray-700/50">
+                    <label className="text-xs font-medium text-gray-300/90 mb-1 block">
                         Data Type
                     </label>
                     <div className="relative">
@@ -92,8 +99,9 @@ const ColumnForm = ({
                             onChange={(e) =>
                                 updateColumn(index, "type", e.target.value)
                             }
-                            className="w-full px-3 py-2 bg-gray-800/50 border border-gray-700/60 rounded-lg focus:ring-2 focus:ring-blue-500/60 focus:border-blue-500/70 outline-none transition text-white/90 text-sm appearance-none hover:border-gray-600/70"
-                            title="Select column data type"
+                            className="w-full px-3 py-1.5 bg-gray-700/60 border border-gray-600/50 rounded-md 
+                focus:ring-1 focus:ring-blue-500/60 focus:border-blue-500/70 outline-none 
+                text-white/90 text-sm appearance-none transition-all"
                         >
                             {dataTypes.map((type) => (
                                 <option
@@ -121,9 +129,9 @@ const ColumnForm = ({
                     </div>
                 </div>
 
-                {/* Default Value */}
-                <div className="space-y-1.5">
-                    <label className="block text-xs font-medium text-gray-300/90">
+                {/* Default Value - Highlighted Card */}
+                <div className="bg-gray-750/80 p-3 rounded-lg border border-gray-700/50">
+                    <label className="text-xs font-medium text-gray-300/90 mb-1 block">
                         Default Value
                     </label>
                     <input
@@ -132,15 +140,16 @@ const ColumnForm = ({
                         onChange={(e) =>
                             updateColumn(index, "defaultValue", e.target.value)
                         }
-                        className="w-full px-3 py-2 bg-gray-800/50 border border-gray-700/60 rounded-lg focus:ring-2 focus:ring-blue-500/60 focus:border-blue-500/70 outline-none transition text-white/90 text-sm placeholder-gray-500/60 hover:border-gray-600/70"
+                        className="w-full px-3 py-1.5 bg-gray-700/60 border border-gray-600/50 rounded-md 
+              focus:ring-1 focus:ring-blue-500/60 focus:border-blue-500/70 outline-none 
+              text-white/90 text-sm placeholder-gray-500/60 transition-all"
                         placeholder="(optional)"
-                        title="Enter default value for this column"
                     />
                 </div>
 
-                {/* Check Constraint */}
-                <div className="space-y-1.5">
-                    <label className="block text-xs font-medium text-gray-300/90">
+                {/* Check Constraint - Highlighted Card */}
+                <div className="bg-gray-750/80 p-3 rounded-lg border border-gray-700/50">
+                    <label className="text-xs font-medium text-gray-300/90 mb-1 block">
                         Check Constraint
                     </label>
                     <input
@@ -153,102 +162,64 @@ const ColumnForm = ({
                                 e.target.value,
                             )
                         }
-                        className="w-full px-3 py-2 bg-gray-800/50 border border-gray-700/60 rounded-lg focus:ring-2 focus:ring-blue-500/60 focus:border-blue-500/70 outline-none transition text-white/90 text-sm placeholder-gray-500/60 hover:border-gray-600/70"
+                        className="w-full px-3 py-1.5 bg-gray-700/60 border border-gray-600/50 rounded-md 
+              focus:ring-1 focus:ring-blue-500/60 focus:border-blue-500/70 outline-none 
+              text-white/90 text-sm placeholder-gray-500/60 transition-all"
                         placeholder="e.g. age > 18"
-                        title="Enter SQL check constraint expression"
                     />
                 </div>
             </div>
 
-            {/* Constraints Toggles */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                <div
-                    className="flex items-center gap-2 p-2 bg-gray-800/40 rounded-lg hover:bg-gray-700/60 transition-colors cursor-pointer border border-gray-700/40 hover:border-gray-600/50"
-                    title="Require this column to have a value (NOT NULL)"
-                >
-                    <input
-                        type="checkbox"
-                        id={`notNull-${index}`}
-                        checked={column.notNull}
-                        onChange={(e) =>
-                            updateColumn(index, "notNull", e.target.checked)
-                        }
-                        className="w-4 h-4 text-blue-500/90 bg-gray-700/80 border-gray-600/70 rounded focus:ring-blue-400/80"
-                    />
-                    <label
-                        htmlFor={`notNull-${index}`}
-                        className="text-xs font-medium text-gray-300/90 cursor-pointer select-none"
+            {/* Constraints - Interactive Toggle Cards */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-4">
+                {[
+                    {
+                        key: "notNull",
+                        label: "NOT NULL",
+                        title: "Require value in this column",
+                    },
+                    {
+                        key: "autoIncrement",
+                        label: "AUTO INCR",
+                        title: "Automatically increment values",
+                    },
+                    {
+                        key: "unique",
+                        label: "UNIQUE",
+                        title: "Enforce unique values",
+                    },
+                    {
+                        key: "primaryKey",
+                        label: "PRIMARY KEY",
+                        title: "Set as primary identifier",
+                    },
+                ].map(({ key, label, title }) => (
+                    <div
+                        key={key}
+                        onClick={() => updateColumn(index, key, !column[key])}
+                        className={`p-2 rounded-md border cursor-pointer transition-colors flex items-center gap-2
+              ${
+                  column[key]
+                      ? "bg-blue-900/30 border-blue-700/50 text-blue-300"
+                      : "bg-gray-800/40 border-gray-700/50 text-gray-400 hover:bg-gray-700/60 hover:border-gray-600/60"
+              }`}
+                        title={title}
                     >
-                        NOT NULL
-                    </label>
-                </div>
-
-                <div
-                    className="flex items-center gap-2 p-2 bg-gray-800/40 rounded-lg hover:bg-gray-700/60 transition-colors cursor-pointer border border-gray-700/40 hover:border-gray-600/50"
-                    title="Automatically increment values (AUTO INCREMENT)"
-                >
-                    <input
-                        type="checkbox"
-                        id={`autoIncrement-${index}`}
-                        checked={column.autoIncrement}
-                        onChange={(e) =>
-                            updateColumn(
-                                index,
-                                "autoIncrement",
-                                e.target.checked,
-                            )
-                        }
-                        className="w-4 h-4 text-blue-500/90 bg-gray-700/80 border-gray-600/70 rounded focus:ring-blue-400/80"
-                    />
-                    <label
-                        htmlFor={`autoIncrement-${index}`}
-                        className="text-xs font-medium text-gray-300/90 cursor-pointer select-none"
-                    >
-                        AUTO INCR
-                    </label>
-                </div>
-
-                <div
-                    className="flex items-center gap-2 p-2 bg-gray-800/40 rounded-lg hover:bg-gray-700/60 transition-colors cursor-pointer border border-gray-700/40 hover:border-gray-600/50"
-                    title="Enforce unique values in this column (UNIQUE)"
-                >
-                    <input
-                        type="checkbox"
-                        id={`unique-${index}`}
-                        checked={column.unique}
-                        onChange={(e) =>
-                            updateColumn(index, "unique", e.target.checked)
-                        }
-                        className="w-4 h-4 text-blue-500/90 bg-gray-700/80 border-gray-600/70 rounded focus:ring-blue-400/80"
-                    />
-                    <label
-                        htmlFor={`unique-${index}`}
-                        className="text-xs font-medium text-gray-300/90 cursor-pointer select-none"
-                    >
-                        UNIQUE
-                    </label>
-                </div>
-
-                <div
-                    className="flex items-center gap-2 p-2 bg-gray-800/40 rounded-lg hover:bg-gray-700/60 transition-colors cursor-pointer border border-gray-700/40 hover:border-gray-600/50"
-                    title="Set this column as primary key (PRIMARY KEY)"
-                >
-                    <input
-                        type="checkbox"
-                        id={`primaryKey-${index}`}
-                        checked={column.primaryKey}
-                        onChange={(e) =>
-                            updateColumn(index, "primaryKey", e.target.checked)
-                        }
-                        className="w-4 h-4 text-blue-500/90 bg-gray-700/80 border-gray-600/70 rounded focus:ring-blue-400/80"
-                    />
-                    <label
-                        htmlFor={`primaryKey-${index}`}
-                        className="text-xs font-medium text-gray-300/90 cursor-pointer select-none"
-                    >
-                        PRIMARY KEY
-                    </label>
-                </div>
+                        <div
+                            className={`w-4 h-4 rounded-sm border flex items-center justify-center transition-colors
+              ${
+                  column[key]
+                      ? "bg-blue-500/90 border-blue-400/80"
+                      : "bg-gray-700/80 border-gray-600/70"
+              }`}
+                        >
+                            {column[key] && (
+                                <FaCheck className="text-white text-xs" />
+                            )}
+                        </div>
+                        <span className="text-xs font-medium">{label}</span>
+                    </div>
+                ))}
             </div>
         </div>
     );

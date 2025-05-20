@@ -34,7 +34,6 @@ const setupGenerativeAI = async () => {
             throw new MyError(500, "Could not load backend config.");
         }
         API_KEY = config.api_key;
-        console.log(API_KEY);
     }
 
     if (!API_KEY) throw new MyError(500, "No API key provided.");

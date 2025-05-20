@@ -7,18 +7,15 @@ import {
     FiHardDrive,
     FiHash,
     FiList,
-    FiRefreshCw,
-    FiServer,
-    FiUsers,
-    FiBarChart2,
-    FiCpu,
     FiLock,
-    FiInfo,
+    FiRefreshCw,
+    FiUsers,
 } from "react-icons/fi";
 import { useNavigate, useParams } from "react-router-dom";
+import Error from "../ui/Error.jsx";
 import Loader from "../ui/Loader.jsx";
 import { getDatabaseDetails } from "../utils/api/axios.js";
-import Error from "../ui/Error.jsx";
+import RefreshButton from "./common/RefreshButton.jsx";
 
 const InfoCard = ({
     title,
@@ -145,75 +142,19 @@ const DatabaseDetails = () => {
                     <div className="p-3 bg-gray-800 rounded-lg border border-gray-700 group-hover:bg-blue-500/10 group-hover:border-blue-500/30 transition-colors duration-300">
                         <FiDatabase className="text-blue-400 text-2xl group-hover:text-blue-300 transition-colors duration-300" />
                     </div>
-                    <div>
-                        <h1 className="text-2xl font-bold text-white group-hover:text-blue-100 transition-colors duration-300">
-                            {databaseInfo.database}
-                            <span className="ml-2 text-xs px-2 py-1 bg-blue-900/30 text-blue-400 rounded-full group-hover:bg-blue-800/40 group-hover:text-blue-300 transition-colors duration-300">
-                                {databaseInfo.engine || "MySQL"}
-                            </span>
-                        </h1>
-                        <p className="text-gray-400 group-hover:text-blue-300 transition-colors duration-300">
-                            {databaseInfo.host || "localhost"}:
-                            {databaseInfo.port || "3306"}
-                        </p>
-                    </div>
+                    <h1 className="text-2xl font-bold pb-2 text-white group-hover:text-blue-100 transition-colors duration-300">
+                        {databaseInfo.database}
+                    </h1>
                 </div>
-                <button
-                    onClick={fetchDatabaseInfo}
+                <RefreshButton
+                    action={fetchDatabaseInfo}
+                    loading={refreshing}
                     title="Refresh Database Information"
-                    disabled={refreshing}
-                    className={`px-4 py-2 bg-gray-800 hover:bg-gray-700 border border-gray-700 rounded-lg text-white flex items-center gap-2 transition-all ${
-                        refreshing
-                            ? "opacity-70 cursor-not-allowed"
-                            : "hover:border-blue-500 hover:shadow-blue-500/10 hover:shadow-lg"
-                    }`}
-                >
-                    <FiRefreshCw
-                        className={`transition-transform ${
-                            refreshing
-                                ? "animate-spin"
-                                : "group-hover:rotate-180"
-                        }`}
-                    />
-                    {refreshing ? "Refreshing..." : "Refresh"}
-                </button>
+                />
             </div>
 
             {/* Stats Grid with tooltips */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                <InfoCard
-                    title="Status"
-                    value={
-                        <div className="flex items-center gap-2">
-                            <span
-                                className={`h-2 w-2 rounded-full ${
-                                    databaseInfo.status === "Connected"
-                                        ? "bg-green-500"
-                                        : "bg-red-500"
-                                }`}
-                            />
-                            <p className="text-xl font-semibold text-white">
-                                {databaseInfo.status}
-                            </p>
-                        </div>
-                    }
-                    icon={
-                        <FiActivity
-                            className={`text-xl ${
-                                databaseInfo.status === "Connected"
-                                    ? "text-green-400"
-                                    : "text-red-400"
-                            }`}
-                        />
-                    }
-                    iconBg={
-                        databaseInfo.status === "Connected"
-                            ? "bg-green-900/30"
-                            : "bg-red-900/30"
-                    }
-                    tooltip="Current connection status to the database"
-                />
-
                 <InfoCard
                     title="Database Size"
                     value={`${databaseInfo.sizeInMB} MB`}
@@ -296,14 +237,6 @@ const DatabaseDetails = () => {
                     }
                     icon={<FiUsers className="text-cyan-400 text-xl" />}
                     iconBg="bg-cyan-900/30"
-                />
-
-                <InfoCard
-                    title="User Privileges"
-                    value={databaseInfo.userPrivileges?.length || 0}
-                    icon={<FiLock className="text-pink-400 text-xl" />}
-                    iconBg="bg-pink-900/30"
-                    tooltip="Number of users with privileges on this database"
                 />
             </div>
 

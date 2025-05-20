@@ -1,79 +1,108 @@
-import { memo } from "react";
-import { FaPlus, FaTimes, FaTable, FaColumns, FaTrash } from "react-icons/fa";
-import Loader from "../../../ui/Loader.jsx";
-import ColumnForm from "./ColumnForm.jsx";
+import { useState, useRef, useEffect } from "react";
+import {
+    FaPlus,
+    FaColumns,
+    FaTrash,
+    FaTimes,
+    FaTable,
+    FaExclamationTriangle,
+} from "react-icons/fa";
+import ColumnForm from "./ColumnForm";
+import Loader from "../../../ui/Loader";
 
-const CreateTableModal = memo(
-    ({ visible, loading, onClose, onSubmit, newTable, setNewTable }) => {
-        const addNewColumn = () => {
-            setNewTable((prev) => ({
-                ...prev,
-                columns: [
-                    ...prev.columns,
-                    {
-                        name: "",
-                        type: "VARCHAR(255)",
-                        notNull: false,
-                        defaultValue: "",
-                        autoIncrement: false,
-                        unique: false,
-                        primaryKey: false,
-                        checkExpression: "",
-                    },
-                ],
-            }));
-        };
+const CreateTableModal = ({
+    visible,
+    onClose,
+    onSubmit,
+    newTable,
+    setNewTable,
+}) => {
+    const [loading, setLoading] = useState(false);
+    const [clearConfirmModal, setClearConfirmModal] = useState(false);
+    const columnsEndRef = useRef(null);
 
-        const clearAllColumns = () => {
-            if (
-                window.confirm(
-                    "Are you sure you want to remove all columns? This cannot be undone.",
-                )
-            ) {
-                setNewTable((prev) => ({
-                    ...prev,
-                    columns: [
-                        {
-                            name: "id",
-                            type: "INT",
-                            notNull: false,
-                            defaultValue: "",
-                            autoIncrement: false,
-                            unique: false,
-                            primaryKey: false,
-                            checkExpression: "",
-                        },
-                    ],
-                }));
-            }
-        };
+    const addNewColumn = () => {
+        setNewTable((prev) => ({
+            ...prev,
+            columns: [
+                ...prev.columns,
+                {
+                    name: "",
+                    type: "VARCHAR(255)",
+                    notNull: false,
+                    defaultValue: "",
+                    autoIncrement: false,
+                    unique: false,
+                    primaryKey: false,
+                    checkExpression: "",
+                },
+            ],
+        }));
+    };
 
-        const removeColumn = (index) => {
-            setNewTable((prev) => ({
-                ...prev,
-                columns: prev.columns.filter((_, i) => i !== index),
-            }));
-        };
+    const clearAllColumns = () => {
+        setClearConfirmModal(true);
+    };
 
-        const updateColumn = (index, field, value) => {
-            setNewTable((prev) => {
-                const updatedColumns = [...prev.columns];
-                updatedColumns[index] = {
-                    ...updatedColumns[index],
-                    [field]: value,
-                };
-                return {
-                    ...prev,
-                    columns: updatedColumns,
-                };
-            });
-        };
+    const confirmClearColumns = () => {
+        setNewTable((prev) => ({
+            ...prev,
+            columns: [
+                {
+                    name: "id",
+                    type: "INT",
+                    notNull: false,
+                    defaultValue: "",
+                    autoIncrement: false,
+                    unique: false,
+                    primaryKey: false,
+                    checkExpression: "",
+                },
+            ],
+        }));
+        setClearConfirmModal(false);
+    };
 
-        if (!visible) return null;
+    const removeColumn = (index) => {
+        setNewTable((prev) => ({
+            ...prev,
+            columns: prev.columns.filter((_, i) => i !== index),
+        }));
+    };
 
-        return (
-            <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-                <div className="bg-gray-800/95 border border-gray-700/50 rounded-xl w-5/6 h-5/6 flex flex-col shadow-xl overflow-hidden">
+    const updateColumn = (index, field, value) => {
+        setNewTable((prev) => {
+            const updatedColumns = [...prev.columns];
+            updatedColumns[index] = {
+                ...updatedColumns[index],
+                [field]: value,
+            };
+            return { ...prev, columns: updatedColumns };
+        });
+    };
+
+    const handleSubmit = async () => {
+        setLoading(true);
+        try {
+            await onSubmit();
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        if (newTable.columns.length > 0) {
+            columnsEndRef.current?.scrollIntoView({ behavior: "smooth" });
+        }
+    }, [newTable.columns.length]);
+
+    if (!visible) return null;
+
+    return (
+        <>
+            {/* Main Modal */}
+            <div className="fixed inset-0 bg-black/80 backdrop-blur-lg z-50 flex items-center justify-center p-4">
+                <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-2xl border border-gray-700/70 w-full max-w-7xl h-full max-h-[80vh] flex flex-col shadow-2xl overflow-hidden transition-all duration-300">
                     {/* Header */}
                     <div className="bg-gray-800/80 border-b border-gray-700/50 p-6">
                         <div className="flex justify-between items-start">
@@ -163,8 +192,16 @@ const CreateTableModal = memo(
                                     updateColumn={updateColumn}
                                     removeColumn={removeColumn}
                                     isLastColumn={newTable.columns.length <= 1}
+                                    isNew={
+                                        index === newTable.columns.length - 1
+                                    }
+                                    focusOnMount={
+                                        index === newTable.columns.length - 1 &&
+                                        column.name === ""
+                                    }
                                 />
                             ))}
+                            <div ref={columnsEndRef} />
                         </div>
                     </div>
 
@@ -179,7 +216,7 @@ const CreateTableModal = memo(
                             Cancel
                         </button>
                         <button
-                            onClick={onSubmit}
+                            onClick={handleSubmit}
                             disabled={
                                 loading ||
                                 !newTable.name.trim() ||
@@ -200,8 +237,53 @@ const CreateTableModal = memo(
                     </div>
                 </div>
             </div>
-        );
-    },
-);
+
+            {/* Clear Columns Confirmation Modal */}
+            {clearConfirmModal && (
+                <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+                    <div className="bg-gray-800 rounded-xl p-6 w-full max-w-xl border border-gray-700 shadow-2xl">
+                        <div className="flex justify-between items-center mb-4">
+                            <h3 className="text-xl font-bold text-white flex items-center gap-2">
+                                <FaExclamationTriangle className="text-red-400" />
+                                Confirm Clear Columns
+                            </h3>
+                        </div>
+
+                        <div className="mb-6">
+                            <div className="flex items-start gap-3 bg-red-900/20 border border-red-800/50 p-4 rounded-lg mb-4">
+                                <FaExclamationTriangle className="text-red-400 mt-0.5 flex-shrink-0" />
+                                <div>
+                                    <p className="text-gray-300">
+                                        This will remove all columns except the
+                                        default ID column.
+                                    </p>
+                                    <p className="text-red-400 text-sm mt-2">
+                                        This action cannot be undone.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="flex justify-end gap-3">
+                            <button
+                                onClick={() => setClearConfirmModal(false)}
+                                className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-all duration-300"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={confirmClearColumns}
+                                className="px-6 py-2 bg-gradient-to-r from-red-600 to-red-500 hover:from-red-500 hover:to-red-400 text-white rounded-lg transition-all duration-300 flex items-center gap-2"
+                            >
+                                <FaTrash />
+                                Clear Columns
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+        </>
+    );
+};
 
 export default CreateTableModal;

@@ -14,6 +14,7 @@ const ViewModeItem = memo(({ item }) => {
         <NavLink
             to={item.path}
             end={item.exact}
+            title={item.title}
             className={({ isActive }) =>
                 `group relative flex justify-center items-center text-xl font-serif size-12 rounded-lg transition-all ${
                     isActive ? "text-purple-400" : "text-cyan-400"
@@ -37,26 +38,31 @@ const TableNavBar = memo(() => {
             icon: EyeIcon,
             name: "Data",
             exact: true,
+            title: "Table data view",
         },
         {
             path: "code",
             icon: CodeIcon,
             name: "Code",
+            title: "MySQL code for the table",
         },
         {
             path: "edit",
             icon: EditIcon,
             name: "Edit",
+            title: "Edit table structure and constraints",
         },
         {
             path: `query-console`,
             name: "Query Console",
             icon: TerminalIcon,
+            title: "Interactive MySQL command-line interface",
         },
         {
             path: "export",
             icon: DownloadIcon,
             name: "Export",
+            title: "Export table and its data",
         },
     ];
 

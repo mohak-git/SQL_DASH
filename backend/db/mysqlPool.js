@@ -18,6 +18,7 @@ const initMySQLPool = ({ host, port, user, password }) => {
             waitForConnections: true,
             connectionLimit: 10,
             queueLimit: 0,
+            dateStrings: true,
         });
         console.log("MySQL pool initialized.");
     }

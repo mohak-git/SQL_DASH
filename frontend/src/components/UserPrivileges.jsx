@@ -1,18 +1,23 @@
 /* eslint-disable no-unused-vars */
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import {
-    FiUserPlus,
-    FiTrash2,
-    FiRefreshCw,
+    FiCheck,
+    FiDatabase,
     FiEye,
     FiKey,
-    FiCheck,
-    FiX,
-    FiDatabase,
     FiLock,
+    FiRefreshCw,
     FiShield,
+    FiTrash2,
+    FiUnlock,
     FiUserCheck,
+    FiUserPlus,
+    FiX,
 } from "react-icons/fi";
+import { FaExclamationTriangle } from "react-icons/fa";
+import { toast } from "react-toastify";
+import Error from "../ui/Error";
+import Loader from "../ui/Loader";
 import {
     addUser,
     deleteUser,
@@ -22,10 +27,9 @@ import {
     grantPrivileges,
     revokePrivileges,
 } from "../utils/api/axios";
-import Loader from "../ui/Loader";
-import Error from "../ui/Error";
+import RefreshButton from "./common/RefreshButton";
 
-const MySQLUserManager = () => {
+const UserPrivileges = () => {
     const [users, setUsers] = useState([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
@@ -50,6 +54,13 @@ const MySQLUserManager = () => {
     const [showGrantsModal, setShowGrantsModal] = useState(false);
     const [showPrivilegesModal, setShowPrivilegesModal] = useState(false);
     const [actionType, setActionType] = useState("grant");
+
+    const [deleteModal, setDeleteModal] = useState({
+        visible: false,
+        loading: false,
+        user: null,
+        host: null,
+    });
 
     const privilegeOptions = [
         "SELECT",
@@ -157,31 +168,38 @@ const MySQLUserManager = () => {
                 confirmPassword: "",
             });
             fetchUsers();
+            toast.success(`User ${newUser.username} created successfully!`);
         } catch (err) {
             setPasswordError(err.message);
         }
     };
 
     const validatePassword = () => {
-        if (newUser.password !== newUser.confirmPassword) {
+        if (newUser.password !== newUser.confirmPassword)
             setPasswordError("Passwords don't match");
-        } else if (!newUser.password) {
+        else if (!newUser.password)
             setPasswordError("Password cannot be empty");
-        } else {
-            setPasswordError(null);
-        }
+        else setPasswordError(null);
     };
 
-    const handleDeleteUser = async (user, host) => {
-        if (
-            window.confirm(`Are you sure you want to delete ${user}@${host}?`)
-        ) {
-            try {
-                await deleteUser(user, host);
-                fetchUsers();
-            } catch (err) {
-                setError(err.message);
-            }
+    const handleDeleteUser = async () => {
+        if (!deleteModal.user || !deleteModal.host) return;
+
+        try {
+            setDeleteModal((prev) => ({ ...prev, loading: true }));
+            await deleteUser(deleteModal.user, deleteModal.host);
+            fetchUsers();
+            setDeleteModal({
+                visible: false,
+                loading: false,
+                user: null,
+                host: null,
+            });
+
+            toast.success(`User ${deleteModal.user} deleted successfully!`);
+        } catch (err) {
+            setError(err.message);
+            setDeleteModal((prev) => ({ ...prev, loading: false }));
         }
     };
 
@@ -290,15 +308,11 @@ const MySQLUserManager = () => {
                 </div>
 
                 <div className="flex gap-3">
-                    <button
-                        onClick={fetchUsers}
-                        className="flex mt-2 items-center h-12 justify-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white text-sm font-medium rounded-md transition-all duration-300 shadow-md hover:scale-[1.02]"
-                    >
-                        <FiRefreshCw
-                            className={`${loading ? "animate-spin" : ""}`}
-                        />
-                        Refresh
-                    </button>
+                    <RefreshButton
+                        loading={loading}
+                        action={fetchUsers}
+                        title={"Refresh Users"}
+                    />
                     <button
                         title="Refresh MySQL user permissions"
                         onClick={handleFlushPrivileges}
@@ -396,16 +410,36 @@ const MySQLUserManager = () => {
                                                         className="p-2 rounded-md bg-purple-900/20 border border-purple-700/50 text-purple-400 hover:bg-purple-900/30 hover:border-purple-500/50 hover:text-purple-300 transition-all duration-200"
                                                         title="Grant Privileges"
                                                     >
-                                                        <FiKey />
+                                                        <FiLock />
                                                     </button>
                                                     <button
-                                                        onClick={() =>
-                                                            handleDeleteUser(
-                                                                user.user,
-                                                                user.host,
-                                                            )
-                                                        }
-                                                        className="p-2 rounded-md bg-red-900/20 border border-red-700/50 text-red-400 hover:bg-red-900/30 hover:border-red-500/50 hover:text-red-300 transition-all duration-200"
+                                                        onClick={() => {
+                                                            setSelectedUser(
+                                                                user,
+                                                            );
+                                                            setActionType(
+                                                                "revoke",
+                                                            );
+                                                            setShowPrivilegesModal(
+                                                                true,
+                                                            );
+                                                        }}
+                                                        className="p-2 rounded-md bg-yellow-900/20 border border-yellow-700/50 text-yellow-400 hover:bg-yellow-900/30 hover:border-yellow-500/50 hover:text-yellow-300 transition-all duration-200"
+                                                        title="Revoke Privileges"
+                                                    >
+                                                        <FiUnlock />
+                                                    </button>
+                                                    <button
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            setDeleteModal({
+                                                                visible: true,
+                                                                loading: false,
+                                                                user: user.user,
+                                                                host: user.host,
+                                                            });
+                                                        }}
+                                                        className="p-2 rounded-lg bg-red-900/20 border border-red-700/50 text-red-400 hover:bg-red-900/30 hover:border-red-500/50 hover:text-red-300 transition-all duration-200"
                                                         title="Delete User"
                                                     >
                                                         <FiTrash2 />
@@ -431,49 +465,62 @@ const MySQLUserManager = () => {
             )}
 
             {showCreateModal && (
-                <div className="fixed inset-0 bg-black/70 backdrop-blur-md bg-opacity-70 flex items-center justify-center p-4 z-50">
-                    <div className="bg-gray-800 rounded-xl border border-gray-700/50 w-full max-w-md">
-                        <div className="p-6">
-                            <div className="flex justify-between items-center mb-6">
-                                <h2 className="text-xl font-semibold text-white flex items-center gap-2">
-                                    <FiUserPlus className="text-blue-400" />
-                                    Create New User
-                                </h2>
+                <div className="fixed inset-0 bg-black/80 backdrop-blur-lg flex items-center justify-center p-4 z-50 animate-fadeIn">
+                    <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-2xl border border-gray-700/70 shadow-2xl w-full max-w-md overflow-hidden animate-slideUp">
+                        {/* Modal Header */}
+                        <div className="bg-gray-800/80 border-b border-gray-700/50 p-6">
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-3">
+                                    <div className="p-2 rounded-lg bg-blue-500/20 border border-blue-500/30">
+                                        <FiUserPlus className="text-xl text-blue-400" />
+                                    </div>
+                                    <h2 className="text-xl font-bold text-white">
+                                        Create New User
+                                    </h2>
+                                </div>
                                 <button
                                     onClick={() => {
                                         setShowCreateModal(false);
                                         setPasswordError(null);
                                     }}
-                                    className="text-gray-400 hover:text-white transition-colors duration-200"
+                                    className="text-gray-400 hover:text-white transition-colors duration-200 p-1 rounded-full hover:bg-gray-700/50"
                                 >
-                                    <FiX />
+                                    <FiX className="text-lg" />
                                 </button>
                             </div>
+                        </div>
 
+                        {/* Modal Body */}
+                        <div className="p-6 space-y-5">
                             <div className="space-y-4">
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-400 mb-1">
+                                {/* Username Field */}
+                                <div className="space-y-1">
+                                    <label className="block text-sm font-medium text-gray-300 mb-1">
                                         Username
                                     </label>
-                                    <input
-                                        type="text"
-                                        className="w-full px-3 py-2 bg-gray-700/50 border border-gray-600/50 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 text-white transition-all duration-200"
-                                        value={newUser.username}
-                                        onChange={(e) =>
-                                            setNewUser({
-                                                ...newUser,
-                                                username: e.target.value,
-                                            })
-                                        }
-                                    />
+                                    <div className="relative">
+                                        <input
+                                            type="text"
+                                            className="w-full px-4 py-3 bg-gray-700/50 border border-gray-600/50 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 text-white transition-all duration-200 placeholder-gray-500"
+                                            value={newUser.username}
+                                            onChange={(e) =>
+                                                setNewUser({
+                                                    ...newUser,
+                                                    username: e.target.value,
+                                                })
+                                            }
+                                            placeholder="Enter username"
+                                        />
+                                    </div>
                                 </div>
 
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-400 mb-1">
+                                {/* Host Field */}
+                                <div className="space-y-1">
+                                    <label className="block text-sm font-medium text-gray-300 mb-1">
                                         Host
                                     </label>
                                     <select
-                                        className="w-full px-3 py-2 bg-gray-700/50 border border-gray-600/50 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 text-white transition-all duration-200"
+                                        className="w-full px-4 py-3 bg-gray-700/50 border border-gray-600/50 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 text-white transition-all duration-200 appearance-none"
                                         value={newUser.host}
                                         onChange={(e) =>
                                             setNewUser({
@@ -492,70 +539,78 @@ const MySQLUserManager = () => {
                                     </select>
                                 </div>
 
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-400 mb-1">
-                                        Password
-                                    </label>
-                                    <input
-                                        type="password"
-                                        className="w-full px-3 py-2 bg-gray-700/50 border border-gray-600/50 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 text-white transition-all duration-200"
-                                        value={newUser.password}
-                                        onChange={(e) => {
-                                            setNewUser({
-                                                ...newUser,
-                                                password: e.target.value,
-                                            });
-                                            validatePassword();
-                                        }}
-                                    />
+                                {/* Password Fields */}
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div className="space-y-1">
+                                        <label className="block text-sm font-medium text-gray-300 mb-1">
+                                            Password
+                                        </label>
+                                        <input
+                                            type="password"
+                                            className="w-full px-4 py-3 bg-gray-700/50 border border-gray-600/50 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 text-white transition-all duration-200"
+                                            value={newUser.password}
+                                            onChange={(e) => {
+                                                setNewUser({
+                                                    ...newUser,
+                                                    password: e.target.value,
+                                                });
+                                                validatePassword();
+                                            }}
+                                            placeholder="••••••••"
+                                        />
+                                    </div>
+                                    <div className="space-y-1">
+                                        <label className="block text-sm font-medium text-gray-300 mb-1">
+                                            Confirm Password
+                                        </label>
+                                        <input
+                                            type="password"
+                                            className="w-full px-4 py-3 bg-gray-700/50 border border-gray-600/50 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 text-white transition-all duration-200"
+                                            value={newUser.confirmPassword}
+                                            onChange={(e) => {
+                                                setNewUser({
+                                                    ...newUser,
+                                                    confirmPassword:
+                                                        e.target.value,
+                                                });
+                                                validatePassword();
+                                            }}
+                                            placeholder="••••••••"
+                                        />
+                                    </div>
                                 </div>
 
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-400 mb-1">
-                                        Confirm Password
-                                    </label>
-                                    <input
-                                        type="password"
-                                        className="w-full px-3 py-2 bg-gray-700/50 border border-gray-600/50 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 text-white transition-all duration-200"
-                                        value={newUser.confirmPassword}
-                                        onChange={(e) => {
-                                            setNewUser({
-                                                ...newUser,
-                                                confirmPassword: e.target.value,
-                                            });
-                                            validatePassword();
-                                        }}
-                                    />
-                                    {passwordError && (
-                                        <div className="mt-1 text-sm text-red-400 flex items-center gap-1">
-                                            <FiX className="flex-shrink-0" />
-                                            {passwordError}
-                                        </div>
-                                    )}
-                                </div>
+                                {passwordError && (
+                                    <div className="mt-2 p-3 bg-red-900/30 border border-red-800/50 rounded-lg flex items-center gap-2 text-red-300 text-sm">
+                                        <FiX className="flex-shrink-0" />
+                                        {passwordError}
+                                    </div>
+                                )}
                             </div>
+                        </div>
 
-                            <div className="mt-6 flex justify-end gap-3">
+                        {/* Modal Footer */}
+                        <div className="bg-gray-800/50 border-t border-gray-700/50 p-6">
+                            <div className="flex justify-end gap-3">
                                 <button
-                                    title="Close without saving changes"
                                     onClick={() => {
                                         setShowCreateModal(false);
                                         setPasswordError(null);
                                     }}
-                                    className="px-4 py-2 rounded-md bg-gray-700/50 border border-gray-600/50 text-gray-300 hover:bg-gray-700 hover:text-white transition-all duration-200"
+                                    className="px-5 py-2.5 rounded-xl bg-gray-700 hover:bg-gray-600 text-gray-300 hover:text-white transition-all duration-200 flex items-center gap-2"
                                 >
                                     Cancel
                                 </button>
                                 <button
-                                    title="Create User with given credentials"
                                     onClick={handleCreateUser}
                                     disabled={!!passwordError}
-                                    className={`px-4 py-2 rounded-md bg-blue-600/90 border border-blue-500/50 text-white hover:bg-blue-600 hover:border-blue-400/50 transition-all duration-200 ${
+                                    className={`px-5 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white transition-all duration-200 flex items-center gap-2 ${
                                         passwordError
                                             ? "opacity-50 cursor-not-allowed"
-                                            : ""
+                                            : "hover:shadow-lg hover:shadow-blue-500/20"
                                     }`}
                                 >
+                                    <FiUserPlus />
                                     Create User
                                 </button>
                             </div>
@@ -564,36 +619,128 @@ const MySQLUserManager = () => {
                 </div>
             )}
 
+            {deleteModal.visible && (
+                <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fadeIn">
+                    <div className="bg-gray-800 rounded-xl p-6 w-full max-w-lg border border-gray-700 shadow-2xl animate-scaleIn">
+                        <div className="flex justify-between items-center mb-4">
+                            <h3 className="text-xl font-bold text-white flex items-center gap-2">
+                                <FaExclamationTriangle className="text-red-400" />
+                                Confirm User Deletion
+                            </h3>
+                        </div>
+
+                        <div className="mb-6">
+                            <div className="flex items-start gap-3 bg-red-900/20 border border-red-800/50 p-4 rounded-lg mb-4">
+                                <FaExclamationTriangle className="text-red-400 mt-0.5 flex-shrink-0" />
+                                <div>
+                                    <p className="text-gray-300">
+                                        You are about to permanently delete user
+                                        : {"  "}
+                                        <b>{deleteModal.user}</b>
+                                    </p>
+                                    <p className="text-red-400 text-sm">
+                                        This action cannot be undone and will
+                                        revoke all privileges.
+                                    </p>
+                                </div>
+                            </div>
+                            <p className="text-gray-400 text-sm">
+                                Type{" "}
+                                <span className="font-mono bg-gray-900/50 px-2 py-1 rounded text-red-300">
+                                    delete user {deleteModal.user}
+                                </span>{" "}
+                                to confirm
+                            </p>
+                            <input
+                                type="text"
+                                className="w-full mt-3 px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none transition-all text-white placeholder-gray-400 font-mono text-sm"
+                                placeholder={`Type "delete user ${deleteModal.user}"`}
+                                autoFocus
+                                onChange={(e) =>
+                                    setDeleteModal((prev) => ({
+                                        ...prev,
+                                        confirmationText: e.target.value,
+                                    }))
+                                }
+                            />
+                        </div>
+
+                        <div className="flex justify-end gap-3">
+                            <button
+                                onClick={() =>
+                                    setDeleteModal({
+                                        visible: false,
+                                        loading: false,
+                                        user: null,
+                                        host: null,
+                                    })
+                                }
+                                className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-all duration-300 hover:scale-[1.02] flex items-center gap-2"
+                                disabled={deleteModal.loading}
+                            >
+                                <FiX />
+                                Cancel
+                            </button>
+                            <button
+                                onClick={handleDeleteUser}
+                                disabled={
+                                    deleteModal.loading ||
+                                    deleteModal.confirmationText !==
+                                        `delete user ${deleteModal.user}`
+                                }
+                                className={`px-6 py-2 bg-gradient-to-r from-red-600 to-red-500 hover:from-red-500 hover:to-red-400 text-white rounded-lg transition-all duration-300 flex items-center gap-2 disabled:opacity-70 shadow-md hover:scale-[1.02] hover:shadow-lg`}
+                            >
+                                {deleteModal.loading ? (
+                                    <Loader size="small" />
+                                ) : (
+                                    <>
+                                        <FiTrash2 className="transition-transform group-hover:scale-110" />
+                                        Delete User
+                                    </>
+                                )}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Grants Modal */}
             {showGrantsModal && selectedUser && (
-                <div className="fixed inset-0 bg-black/70 backdrop-blur-md bg-opacity-70 flex items-center justify-center p-4 z-50">
-                    <div className="bg-gray-800 rounded-xl border border-gray-700/50 w-full max-w-4xl">
-                        <div className="p-6">
-                            <div className="flex justify-between items-center mb-6">
-                                <h2 className="text-xl font-semibold text-white flex items-center gap-2">
-                                    <FiShield className="text-blue-400" />
-                                    Privileges for {selectedUser.user}@
-                                    {selectedUser.host}
-                                </h2>
+                <div className="fixed inset-0 bg-black/80 backdrop-blur-lg flex items-center justify-center p-4 z-50 animate-fadeIn">
+                    <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-2xl border border-gray-700/70 shadow-2xl w-full max-w-4xl overflow-hidden animate-slideUp">
+                        <div className="bg-gray-800/80 border-b border-gray-700/50 p-6">
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-3">
+                                    <div className="p-2 rounded-lg bg-purple-500/20 border border-purple-500/30">
+                                        <FiShield className="text-xl text-purple-400" />
+                                    </div>
+                                    <h2 className="text-xl font-bold text-white">
+                                        Privileges for {selectedUser.user}@
+                                        {selectedUser.host}
+                                    </h2>
+                                </div>
                                 <button
                                     onClick={() => setShowGrantsModal(false)}
-                                    className="text-gray-400 hover:text-white transition-colors duration-200"
+                                    className="text-gray-400 hover:text-white transition-colors duration-200 p-1 rounded-full hover:bg-gray-700/50"
                                 >
-                                    <FiX />
+                                    <FiX className="text-lg" />
                                 </button>
                             </div>
+                        </div>
 
-                            <div className="bg-gray-700/30 rounded-lg border border-gray-600/50 max-h-[70vh] overflow-y-auto">
+                        <div className="p-6">
+                            <div className="bg-gray-700/30 rounded-xl border border-gray-600/50 max-h-[60vh] overflow-y-auto">
                                 {userGrants.length > 0 ? (
                                     <table className="w-full">
                                         <thead className="sticky top-0 bg-gray-800 z-10">
                                             <tr className="border-b border-gray-700/50">
-                                                <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
+                                                <th className="px-5 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
                                                     Privileges
                                                 </th>
-                                                <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
+                                                <th className="px-5 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
                                                     Database
                                                 </th>
-                                                <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
+                                                <th className="px-5 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
                                                     Table
                                                 </th>
                                             </tr>
@@ -607,15 +754,15 @@ const MySQLUserManager = () => {
                                                         key={index}
                                                         className="hover:bg-gray-700/50 transition-colors duration-150"
                                                     >
-                                                        <td className="px-4 py-3 whitespace-normal text-sm text-blue-300">
+                                                        <td className="px-5 py-4 whitespace-normal text-sm font-medium text-blue-300">
                                                             {parsed.privileges ||
                                                                 "USAGE"}
                                                         </td>
-                                                        <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-300">
+                                                        <td className="px-5 py-4 whitespace-nowrap text-sm text-gray-300">
                                                             {parsed.database ||
                                                                 "*"}
                                                         </td>
-                                                        <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-300">
+                                                        <td className="px-5 py-4 whitespace-nowrap text-sm text-gray-300">
                                                             {parsed.table ||
                                                                 "*"}
                                                         </td>
@@ -626,216 +773,184 @@ const MySQLUserManager = () => {
                                     </table>
                                 ) : (
                                     <div className="p-8 text-center text-gray-400">
+                                        <FiDatabase className="mx-auto text-3xl mb-3 opacity-50" />
                                         No privileges granted to this user
                                     </div>
                                 )}
-                            </div>
-
-                            <div className="mt-6 flex justify-end gap-3">
-                                <button
-                                    title="Revoke privileges on this user"
-                                    onClick={() => {
-                                        setActionType("revoke");
-                                        setShowGrantsModal(false);
-                                        setShowPrivilegesModal(true);
-                                    }}
-                                    className="px-4 py-2 rounded-md bg-red-600/50 border border-red-500/30 text-white hover:bg-red-600/70 hover:border-red-400/30 transition-all duration-200 flex items-center gap-2"
-                                >
-                                    <FiKey /> Revoke Privileges
-                                </button>
-                                <button
-                                    title="Grant privileges on this user"
-                                    onClick={() => {
-                                        setActionType("grant");
-                                        setShowGrantsModal(false);
-                                        setShowPrivilegesModal(true);
-                                    }}
-                                    className="px-4 py-2 rounded-md bg-green-600/50 border border-green-500/30 text-white hover:bg-green-600/70 hover:border-green-400/30 transition-all duration-200 flex items-center gap-2"
-                                >
-                                    <FiKey /> Grant Privileges
-                                </button>
                             </div>
                         </div>
                     </div>
                 </div>
             )}
 
+            {/* Privileges Modal */}
             {showPrivilegesModal && selectedUser && (
-                <div className="fixed inset-0 bg-black/70 backdrop-blur-md bg-opacity-70 flex items-center justify-center p-4 z-50">
-                    <div className="bg-gray-800 rounded-xl border border-gray-700/50 w-full max-w-3xl">
-                        <div className="p-6">
-                            <div className="flex justify-between items-center mb-6">
-                                <h2 className="text-xl font-semibold text-white flex items-center gap-2">
-                                    <FiKey
-                                        className={
+                <div className="fixed inset-0 bg-black/80 backdrop-blur-lg flex items-center justify-center p-4 z-50 animate-fadeIn">
+                    <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-2xl border border-gray-700/70 shadow-2xl w-full max-w-3xl overflow-hidden animate-slideUp">
+                        <div className="bg-gray-800/80 border-b border-gray-700/50 p-6">
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-3">
+                                    <div
+                                        className={`p-2 rounded-lg ${
                                             actionType === "grant"
-                                                ? "text-green-400"
-                                                : "text-red-400"
-                                        }
-                                    />
-                                    {actionType === "grant"
-                                        ? "Grant"
-                                        : "Revoke"}{" "}
-                                    Privileges for {selectedUser.user}@
-                                    {selectedUser.host}
-                                </h2>
+                                                ? "bg-blue-500/20 border-blue-500/30"
+                                                : "bg-red-500/20 border-red-500/30"
+                                        } border`}
+                                    >
+                                        <FiKey
+                                            className={`text-xl ${
+                                                actionType === "grant"
+                                                    ? "text-blue-400"
+                                                    : "text-red-400"
+                                            }`}
+                                        />
+                                    </div>
+                                    <h2 className="text-xl font-bold text-white">
+                                        {actionType === "grant"
+                                            ? "Grant"
+                                            : "Revoke"}{" "}
+                                        Privileges
+                                    </h2>
+                                </div>
                                 <button
                                     onClick={() =>
                                         setShowPrivilegesModal(false)
                                     }
-                                    className="text-gray-400 hover:text-white transition-colors duration-200"
+                                    className="text-gray-400 hover:text-white transition-colors duration-200 p-1 rounded-full hover:bg-gray-700/50"
                                 >
-                                    <FiX />
+                                    <FiX className="text-lg" />
                                 </button>
                             </div>
+                        </div>
 
-                            <div className="space-y-4">
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-400 mb-1">
-                                            Database Name
-                                        </label>
-                                        <input
-                                            type="text"
-                                            className="w-full px-3 py-2 bg-gray-700/50 border border-gray-600/50 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 text-white transition-all duration-200"
-                                            value={privileges.dbName}
-                                            onChange={(e) =>
-                                                setPrivileges({
-                                                    ...privileges,
-                                                    dbName: e.target.value,
-                                                })
-                                            }
-                                            placeholder="* for all databases"
-                                        />
-                                    </div>
-
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-400 mb-1">
-                                            Table Name
-                                        </label>
-                                        <input
-                                            type="text"
-                                            className="w-full px-3 py-2 bg-gray-700/50 border border-gray-600/50 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 text-white transition-all duration-200"
-                                            value={privileges.tableName}
-                                            onChange={(e) =>
-                                                setPrivileges({
-                                                    ...privileges,
-                                                    tableName: e.target.value,
-                                                })
-                                            }
-                                            placeholder="* for all tables"
-                                        />
-                                    </div>
+                        <div className="p-6 space-y-6">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                                <div className="space-y-1">
+                                    <label className="block text-sm font-medium text-gray-300 mb-1">
+                                        Database Name
+                                    </label>
+                                    <input
+                                        type="text"
+                                        className="w-full px-4 py-3 bg-gray-700/50 border border-gray-600/50 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 text-white transition-all duration-200"
+                                        value={privileges.dbName}
+                                        onChange={(e) =>
+                                            setPrivileges({
+                                                ...privileges,
+                                                dbName: e.target.value,
+                                            })
+                                        }
+                                        placeholder="* for all databases"
+                                    />
                                 </div>
 
-                                <div>
-                                    <div className="flex justify-between items-center mb-2">
-                                        <label className="block text-sm font-medium text-gray-400">
-                                            Select Privileges
-                                        </label>
-                                        <span className="text-xs text-gray-500">
-                                            {
-                                                privileges.selectedPrivileges
-                                                    .length
-                                            }{" "}
-                                            selected
-                                        </span>
-                                    </div>
-                                    <div className="bg-gray-700/30 p-4 rounded-lg border border-gray-600/50 max-h-64 overflow-y-auto">
-                                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                                            {privilegeOptions.map((priv) => {
-                                                const isSelected =
-                                                    privileges.selectedPrivileges.includes(
-                                                        priv,
-                                                    );
-                                                return (
+                                <div className="space-y-1">
+                                    <label className="block text-sm font-medium text-gray-300 mb-1">
+                                        Table Name
+                                    </label>
+                                    <input
+                                        type="text"
+                                        className="w-full px-4 py-3 bg-gray-700/50 border border-gray-600/50 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 text-white transition-all duration-200"
+                                        value={privileges.tableName}
+                                        onChange={(e) =>
+                                            setPrivileges({
+                                                ...privileges,
+                                                tableName: e.target.value,
+                                            })
+                                        }
+                                        placeholder="* for all tables"
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="space-y-2">
+                                <div className="flex justify-between items-center">
+                                    <label className="block text-sm font-medium text-gray-300">
+                                        Select Privileges
+                                    </label>
+                                    <span className="text-xs font-medium px-2 py-1 rounded-full bg-gray-700/50 text-gray-300">
+                                        {privileges.selectedPrivileges.length}{" "}
+                                        selected
+                                    </span>
+                                </div>
+                                <div className="bg-gray-700/30 p-4 rounded-xl border border-gray-600/50 max-h-64 overflow-y-auto">
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                                        {privilegeOptions.map((priv) => {
+                                            const isSelected =
+                                                privileges.selectedPrivileges.includes(
+                                                    priv,
+                                                );
+                                            return (
+                                                <div
+                                                    key={priv}
+                                                    className={`p-3 rounded-lg border cursor-pointer transition-all duration-200 flex items-center gap-3 ${
+                                                        isSelected
+                                                            ? actionType ===
+                                                              "grant"
+                                                                ? "bg-blue-900/20 border-blue-700/50 text-blue-100 shadow-blue-500/10"
+                                                                : "bg-red-900/20 border-red-700/50 text-red-100 shadow-red-500/10"
+                                                            : "bg-gray-700/10 border-gray-600/50 text-gray-300 hover:bg-gray-700/30 hover:border-gray-500/50"
+                                                    }`}
+                                                    onClick={() =>
+                                                        handlePrivilegeChange(
+                                                            priv,
+                                                        )
+                                                    }
+                                                >
                                                     <div
-                                                        key={priv}
-                                                        className={`p-3 rounded-md border cursor-pointer transition-all duration-200 flex items-center gap-3 ${
+                                                        className={`p-1 rounded ${
                                                             isSelected
                                                                 ? actionType ===
                                                                   "grant"
-                                                                    ? "bg-green-900/20 border-green-700/50 text-green-100"
-                                                                    : "bg-red-900/20 border-red-700/50 text-red-100"
-                                                                : "bg-gray-700/10 border-gray-600/50 text-gray-300 hover:bg-gray-700/30 hover:border-gray-500/50"
+                                                                    ? "bg-blue-800/50 text-blue-300"
+                                                                    : "bg-red-800/50 text-red-300"
+                                                                : "bg-gray-700/50"
                                                         }`}
-                                                        onClick={() =>
-                                                            handlePrivilegeChange(
-                                                                priv,
-                                                            )
-                                                        }
                                                     >
-                                                        <div
-                                                            className={`p-1 rounded ${
-                                                                isSelected
-                                                                    ? actionType ===
-                                                                      "grant"
-                                                                        ? "bg-green-800/50 text-green-300"
-                                                                        : "bg-red-800/50 text-red-300"
-                                                                    : "bg-gray-700/50"
-                                                            }`}
-                                                        >
-                                                            {isSelected ? (
-                                                                <FiCheck />
-                                                            ) : (
-                                                                <div className="w-4 h-4" />
-                                                            )}
-                                                        </div>
-                                                        <span className="text-sm">
-                                                            {priv}
-                                                        </span>
+                                                        {isSelected ? (
+                                                            <FiCheck />
+                                                        ) : (
+                                                            <div className="w-4 h-4" />
+                                                        )}
                                                     </div>
-                                                );
-                                            })}
-                                        </div>
+                                                    <span className="text-sm">
+                                                        {priv}
+                                                    </span>
+                                                </div>
+                                            );
+                                        })}
                                     </div>
                                 </div>
                             </div>
+                        </div>
 
-                            <div className="mt-6 flex justify-between items-center">
-                                <div className="flex flex-col">
-                                    <div
-                                        className={`text-sm font-medium mb-1 ${
-                                            actionType === "grant"
-                                                ? "text-green-400"
-                                                : "text-red-400"
-                                        }`}
-                                    >
-                                        Note : Selected Privileges will be
-                                        {actionType === "grant"
-                                            ? " granted"
-                                            : " revoked"}
-                                    </div>
-                                    <div className="text-sm text-gray-400">
-                                        Current scope: {privileges.dbName}.
+                        <div className="bg-gray-800/50 border-t border-gray-700/50 p-6">
+                            <div className="flex justify-between items-center">
+                                <div className="text-sm text-gray-400">
+                                    Current scope:{" "}
+                                    <span className="font-mono text-gray-300">
+                                        {privileges.dbName}.
                                         {privileges.tableName}
-                                    </div>
+                                    </span>
                                 </div>
                                 <div className="flex gap-3">
                                     <button
-                                        title="Close without saving changes"
                                         onClick={() =>
                                             setShowPrivilegesModal(false)
                                         }
-                                        className="px-4 py-2 rounded-md bg-gray-700/50 border border-gray-600/50 text-gray-300 hover:bg-gray-700 hover:text-white transition-all duration-200"
+                                        className="px-5 py-2.5 rounded-xl bg-gray-700 hover:bg-gray-600 text-gray-300 hover:text-white transition-all duration-200"
                                     >
                                         Cancel
                                     </button>
                                     <button
-                                        title={
-                                            actionType === "grant"
-                                                ? "Grant selected privileges to selected users"
-                                                : "Revoke selected privileges from selected users"
-                                        }
                                         onClick={handlePrivilegeAction}
                                         disabled={
                                             privileges.selectedPrivileges
                                                 .length === 0
                                         }
-                                        className={`px-4 py-2 rounded-md border text-white transition-all duration-200 flex items-center gap-2 ${
+                                        className={`px-5 py-2.5 rounded-xl text-white transition-all duration-200 flex items-center gap-2 ${
                                             actionType === "grant"
-                                                ? "bg-green-600/90 border-green-500/50 hover:bg-green-600 hover:border-green-400/50"
-                                                : "bg-red-600/90 border-red-500/50 hover:bg-red-600 hover:border-red-400/50"
+                                                ? "bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 hover:shadow-lg hover:shadow-blue-500/20"
+                                                : "bg-gradient-to-r from-red-600 to-red-500 hover:from-red-500 hover:to-red-400 hover:shadow-lg hover:shadow-red-500/20"
                                         } disabled:opacity-50 disabled:cursor-not-allowed`}
                                     >
                                         <FiKey />
@@ -853,4 +968,4 @@ const MySQLUserManager = () => {
     );
 };
 
-export default MySQLUserManager;
+export default UserPrivileges;

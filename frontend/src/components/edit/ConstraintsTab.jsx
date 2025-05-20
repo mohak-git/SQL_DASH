@@ -4,10 +4,22 @@ import {
     FaColumns,
     FaKey,
     FaLink,
+    FaLock,
     FaRegCheckCircle,
+    FaRulerCombined,
     FaStar,
+    FaUnlink,
+    FaExclamationTriangle,
+    FaDatabase
 } from "react-icons/fa";
-import { FiChevronDown, FiPlus, FiSave, FiTrash2 } from "react-icons/fi";
+import {
+    FiChevronDown,
+    FiPlus,
+    FiSave,
+    FiSettings,
+    FiTrash2,
+    FiX
+} from "react-icons/fi";
 import { IoMdClose } from "react-icons/io";
 import Error from "../../ui/Error";
 import Loader from "../../ui/Loader";
@@ -36,6 +48,8 @@ const ConstraintsTab = ({
     const [onDelete, setOnDelete] = useState("");
     const [onUpdate, setOnUpdate] = useState("");
     const [checkExpression, setCheckExpression] = useState("");
+    const [showConfirmModal, setShowConfirmModal] = useState(false);
+    const [constraintToDelete, setConstraintToDelete] = useState(null);
 
     const resetForm = () => {
         setConstraintType("PRIMARY KEY");
@@ -92,22 +106,16 @@ const ConstraintsTab = ({
         }
     };
 
-    const handleDropConstraint = async (constraintName) => {
-        if (
-            !window.confirm(
-                `Are you sure you want to drop constraint '${constraintName}'?`,
-            )
-        ) {
-            return;
-        }
-
+    const confirmDropConstraint = async () => {
+        if (!constraintToDelete) return;
+        
         try {
             setLoading(true);
             setError(null);
             const response = await dropConstraint(
                 dbName,
                 tableName,
-                constraintName,
+                constraintToDelete,
             );
             setSuccessMessage(response.data.message);
             setTimeout(() => setSuccessMessage(null), 5000);
@@ -121,6 +129,7 @@ const ConstraintsTab = ({
             );
         } finally {
             setLoading(false);
+            setConstraintToDelete(null);
         }
     };
 
@@ -139,30 +148,100 @@ const ConstraintsTab = ({
         }
     };
 
+    const ConfirmationModal = ({ 
+        isOpen, 
+        onClose, 
+        onConfirm, 
+        title, 
+        description, 
+        confirmText = "Confirm",
+        danger = false 
+    }) => {
+        if (!isOpen) return null;
+
+        return (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
+                <div className="bg-gray-800 border border-gray-700 rounded-xl w-full max-w-md shadow-2xl overflow-hidden animate-scaleIn">
+                    <div className="p-5 border-b border-gray-700 flex items-start justify-between">
+                        <div className="flex items-center gap-3">
+                            <div className={`p-2 rounded-full ${danger ? 'bg-red-900/30 text-red-400' : 'bg-blue-900/30 text-blue-400'}`}>
+                                {danger ? <FaExclamationTriangle /> : <FaCheckCircle />}
+                            </div>
+                            <h3 className="text-lg font-semibold text-white">{title}</h3>
+                        </div>
+                        <button 
+                            onClick={onClose}
+                            className="text-gray-400 hover:text-white p-1 rounded-full hover:bg-gray-700/50 transition-all"
+                        >
+                            <FiX size={18} />
+                        </button>
+                    </div>
+                    <div className="p-5">
+                        <p className="text-gray-300">{description}</p>
+                    </div>
+                    <div className="p-4 border-t border-gray-700 flex justify-end gap-3">
+                        <button
+                            onClick={onClose}
+                            className="px-4 py-2 text-sm font-medium text-gray-300 bg-gray-700/50 hover:bg-gray-600/70 rounded-lg border border-gray-600 transition-all hover:scale-[1.02]"
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            onClick={onConfirm}
+                            className={`px-4 py-2 text-sm font-medium text-white rounded-lg border transition-all hover:scale-[1.02] ${
+                                danger 
+                                    ? 'bg-red-600/90 hover:bg-red-500/90 border-red-700'
+                                    : 'bg-blue-600/90 hover:bg-blue-500/90 border-blue-700'
+                            }`}
+                        >
+                            {confirmText}
+                        </button>
+                    </div>
+                </div>
+            </div>
+        );
+    };
+
     return (
         <div className="space-y-6">
             {/* Success/Error messages */}
             {successMessage && (
-                <div className="bg-green-900/30 border border-green-700/50 text-green-400 p-4 rounded-lg backdrop-blur-sm flex items-center gap-3">
-                    <FaRegCheckCircle className="flex-shrink-0" />
+                <div className="bg-green-900/30 border border-green-700/50 text-green-400 p-4 rounded-lg backdrop-blur-sm flex items-center gap-3 animate-fadeIn">
+                    <div className="p-1.5 rounded-full bg-green-900/30">
+                        <FaCheckCircle className="text-sm" />
+                    </div>
                     <span>{successMessage}</span>
                 </div>
             )}
             {error && <Error error={error} />}
 
+            {/* Confirmation Modal */}
+            <ConfirmationModal
+                isOpen={!!constraintToDelete}
+                onClose={() => setConstraintToDelete(null)}
+                onConfirm={confirmDropConstraint}
+                title="Drop Constraint"
+                description={`Are you sure you want to drop the constraint "${constraintToDelete}"? This action cannot be undone.`}
+                confirmText={loading ? "Dropping..." : "Drop Constraint"}
+                danger={true}
+            />
+
             {/* Header with Add Button */}
-            <div className="flex justify-between items-center">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <div className="flex items-center gap-3">
-                    <div className="p-2 rounded-lg bg-gray-800/50 border border-gray-700">
-                        <FaColumns className="text-blue-400 text-lg" />
+                    <div className="p-2 rounded-lg bg-gray-800/50 border border-gray-700 group-hover:border-blue-500/30 transition-colors">
+                        <FiSettings className="text-blue-400 text-lg group-hover:text-blue-300 transition-colors" />
                     </div>
-                    <h3 className="text-xl font-semibold text-white">
-                        Table Constraints
-                    </h3>
+                    <div>
+                        <h3 className="text-xl font-semibold text-white">Table Constraints</h3>
+                        <p className="text-xs text-gray-400 mt-1">
+                            {dbName} • {tableName}
+                        </p>
+                    </div>
                 </div>
                 <button
                     onClick={() => setShowAddForm(true)}
-                    className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white rounded-lg transition-all shadow-lg hover:shadow-blue-500/20"
+                    className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white rounded-lg transition-all shadow-lg hover:shadow-blue-500/20 hover:scale-[1.02] active:scale-95"
                 >
                     <FiPlus className="text-lg" />
                     <span>Add Constraint</span>
@@ -170,7 +249,7 @@ const ConstraintsTab = ({
             </div>
 
             {/* Existing Constraints */}
-            <div className="bg-gray-900/50 rounded-xl p-6 border border-gray-700/50 backdrop-blur-sm">
+            <div className="bg-gray-900/50 rounded-xl p-6 border border-gray-700/50 backdrop-blur-sm transition-all duration-300">
                 <h4 className="text-lg font-semibold text-white mb-5 flex items-center gap-2">
                     <span className="bg-blue-900/30 text-blue-400 p-1.5 rounded-lg">
                         <FaColumns />
@@ -179,7 +258,7 @@ const ConstraintsTab = ({
                 </h4>
 
                 {constraints.length === 0 ? (
-                    <div className="p-8 text-center bg-gray-900/30 rounded-lg border border-dashed border-gray-700/50">
+                    <div className="p-8 text-center bg-gray-900/30 rounded-lg border-2 border-dashed border-gray-700/50 hover:border-blue-500/30 transition-all duration-300">
                         <p className="text-gray-400">
                             No constraints defined for this table
                         </p>
@@ -189,11 +268,11 @@ const ConstraintsTab = ({
                         {constraints.map((constraint) => (
                             <div
                                 key={constraint.name}
-                                className="bg-gray-800/30 p-4 rounded-lg border border-gray-700/50 hover:border-gray-600/50 transition-colors group"
+                                className="bg-gray-800/30 p-4 rounded-lg border border-gray-700/50 hover:border-gray-600/50 transition-colors duration-200 group relative"
                             >
                                 <div className="flex justify-between items-start">
                                     <div className="flex items-start gap-3">
-                                        <div className="mt-1">
+                                        <div className={`mt-1 p-2 rounded-lg ${constraint.type === "PRIMARY KEY" ? "bg-blue-900/20 text-blue-400" : constraint.type === "FOREIGN KEY" ? "bg-purple-900/20 text-purple-400" : constraint.type === "CHECK" ? "bg-green-900/20 text-green-400" : "bg-yellow-900/20 text-yellow-400"}`}>
                                             {getConstraintIcon(constraint.type)}
                                         </div>
                                         <div>
@@ -267,12 +346,8 @@ const ConstraintsTab = ({
                                         </div>
                                     </div>
                                     <button
-                                        onClick={() =>
-                                            handleDropConstraint(
-                                                constraint.name,
-                                            )
-                                        }
-                                        className="p-1.5 text-gray-400 hover:text-red-400 rounded-full hover:bg-red-900/20 transition-colors opacity-0 group-hover:opacity-100"
+                                        onClick={() => setConstraintToDelete(constraint.name)}
+                                        className="p-1.5 text-gray-400 hover:text-red-400 rounded-full hover:bg-red-900/20 transition-colors opacity-0 group-hover:opacity-100 hover:scale-110"
                                         title="Drop constraint"
                                     >
                                         <FiTrash2 />
@@ -286,7 +361,7 @@ const ConstraintsTab = ({
 
             {/* Add Constraint Form */}
             {showAddForm && (
-                <div className="bg-gray-900/50 rounded-xl p-6 border border-gray-700/50 backdrop-blur-sm">
+                <div className="bg-gray-900/50 rounded-xl p-6 border border-gray-700/50 backdrop-blur-sm animate-fadeIn">
                     <div className="flex justify-between items-center mb-6">
                         <h4 className="text-lg font-semibold text-white flex items-center gap-2">
                             <span className="bg-blue-900/30 text-blue-400 p-1.5 rounded-lg">
@@ -299,7 +374,7 @@ const ConstraintsTab = ({
                                 setShowAddForm(false);
                                 resetForm();
                             }}
-                            className="p-1.5 text-gray-400 hover:text-white rounded-full hover:bg-gray-700/50 transition-colors"
+                            className="p-1.5 text-gray-400 hover:text-white rounded-full hover:bg-gray-700/50 transition-colors hover:rotate-90"
                         >
                             <IoMdClose size={20} />
                         </button>
@@ -316,7 +391,7 @@ const ConstraintsTab = ({
                                     onChange={(e) =>
                                         setConstraintType(e.target.value)
                                     }
-                                    className="w-full px-4 py-2 bg-gray-800/70 border border-gray-700/50 rounded-lg text-white text-sm appearance-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/30 transition"
+                                    className="w-full px-4 py-2 bg-gray-800/70 border border-gray-700/50 rounded-lg text-white text-sm appearance-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/30 transition hover:border-gray-600/50"
                                 >
                                     <option value="PRIMARY KEY">
                                         Primary Key
@@ -341,7 +416,7 @@ const ConstraintsTab = ({
                                 onChange={(e) =>
                                     setConstraintName(e.target.value)
                                 }
-                                className="w-full px-4 py-2 bg-gray-800/70 border border-gray-700/50 rounded-lg text-white text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500/30 transition"
+                                className="w-full px-4 py-2 bg-gray-800/70 border border-gray-700/50 rounded-lg text-white text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500/30 transition hover:border-gray-600/50"
                                 placeholder="Enter constraint name"
                                 disabled={constraintType === "PRIMARY KEY"}
                             />
@@ -356,7 +431,7 @@ const ConstraintsTab = ({
                             {columns.map((column) => (
                                 <div
                                     key={column.name}
-                                    className={`p-3 rounded-lg border cursor-pointer transition-all flex items-center gap-2 ${
+                                    className={`p-3 rounded-lg border cursor-pointer transition-all flex items-center gap-2 hover:scale-[1.02] active:scale-95 ${
                                         selectedColumns.includes(column.name)
                                             ? "bg-blue-500/10 border-blue-500/50 shadow-blue-500/10"
                                             : "bg-gray-800/30 border-gray-700/50 hover:border-gray-600/50"
@@ -366,7 +441,7 @@ const ConstraintsTab = ({
                                     }
                                 >
                                     <div
-                                        className={`w-3 h-3 rounded-full border ${
+                                        className={`w-3 h-3 rounded-full border transition-all ${
                                             selectedColumns.includes(
                                                 column.name,
                                             )
@@ -399,7 +474,7 @@ const ConstraintsTab = ({
                                     onChange={(e) =>
                                         setReferenceTable(e.target.value)
                                     }
-                                    className="w-full px-4 py-2 bg-gray-800/70 border border-gray-700/50 rounded-lg text-white text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500/30 transition"
+                                    className="w-full px-4 py-2 bg-gray-800/70 border border-gray-700/50 rounded-lg text-white text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500/30 transition hover:border-gray-600/50"
                                     placeholder="Enter reference table name"
                                 />
                             </div>
@@ -413,7 +488,7 @@ const ConstraintsTab = ({
                                         onChange={(e) =>
                                             setOnDelete(e.target.value)
                                         }
-                                        className="w-full px-4 py-2 bg-gray-800/70 border border-gray-700/50 rounded-lg text-white text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500/30 transition"
+                                        className="w-full px-4 py-2 bg-gray-800/70 border border-gray-700/50 rounded-lg text-white text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500/30 transition hover:border-gray-600/50"
                                     >
                                         <option value="">No Action</option>
                                         <option value="CASCADE">Cascade</option>
@@ -434,7 +509,7 @@ const ConstraintsTab = ({
                                         onChange={(e) =>
                                             setOnUpdate(e.target.value)
                                         }
-                                        className="w-full px-4 py-2 bg-gray-800/70 border border-gray-700/50 rounded-lg text-white text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500/30 transition"
+                                        className="w-full px-4 py-2 bg-gray-800/70 border border-gray-700/50 rounded-lg text-white text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500/30 transition hover:border-gray-600/50"
                                     >
                                         <option value="">No Action</option>
                                         <option value="CASCADE">Cascade</option>
@@ -461,7 +536,7 @@ const ConstraintsTab = ({
                                 onChange={(e) =>
                                     setCheckExpression(e.target.value)
                                 }
-                                className="w-full px-4 py-2 bg-gray-800/70 border border-gray-700/50 rounded-lg text-white text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500/30 transition"
+                                className="w-full px-4 py-2 bg-gray-800/70 border border-gray-700/50 rounded-lg text-white text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500/30 transition hover:border-gray-600/50"
                                 placeholder="e.g. age > 18"
                             />
                         </div>
@@ -473,21 +548,37 @@ const ConstraintsTab = ({
                                 setShowAddForm(false);
                                 resetForm();
                             }}
-                            className="px-5 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-all"
+                            className="px-5 py-2 text-sm font-medium text-gray-300 bg-gray-700 hover:bg-gray-600 rounded-lg border border-gray-600 transition-all hover:scale-[1.02] active:scale-95"
                         >
                             Cancel
                         </button>
                         <button
-                            onClick={handleAddConstraint}
+                            onClick={() => {
+                                if (selectedColumns.length === 0) {
+                                    setError("Please select at least one column");
+                                    return;
+                                }
+                                setShowConfirmModal(true);
+                            }}
                             disabled={loading || selectedColumns.length === 0}
-                            className="px-6 py-2 bg-gradient-to-r from-green-600 to-green-500 hover:from-green-500 hover:to-green-400 text-white rounded-lg transition-all flex items-center gap-2 shadow-lg hover:shadow-blue-500/20 disabled:opacity-70 disabled:cursor-not-allowed"
+                            className="px-6 py-2 text-sm font-medium text-white bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 rounded-lg border border-blue-600 shadow-lg hover:shadow-blue-500/20 transition-all hover:scale-[1.02] active:scale-95 flex items-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
                         >
                             {loading ? <Loader size="sm" /> : <FiSave />}
-                            <span>Save</span>
+                            <span>Add Constraint</span>
                         </button>
                     </div>
                 </div>
             )}
+
+            {/* Add Constraint Confirmation Modal */}
+            <ConfirmationModal
+                isOpen={showConfirmModal}
+                onClose={() => setShowConfirmModal(false)}
+                onConfirm={handleAddConstraint}
+                title="Add Constraint"
+                description={`Are you sure you want to add this ${constraintType} constraint?`}
+                confirmText={loading ? "Adding..." : "Add Constraint"}
+            />
         </div>
     );
 };

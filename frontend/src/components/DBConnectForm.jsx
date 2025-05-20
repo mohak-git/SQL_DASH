@@ -1,15 +1,17 @@
 import { useState } from "react";
 import {
     FiArrowRight,
+    FiCheck,
     FiDatabase,
     FiHash,
     FiLock,
     FiServer,
     FiUser,
+    FiX,
+    FiLoader,
 } from "react-icons/fi";
 import { useNavigate } from "react-router-dom";
 import { connectToDatabase } from "../utils/api/axios.js";
-import { toast } from "react-toastify";
 
 const DBConnectForm = () => {
     const navigate = useNavigate();
@@ -17,11 +19,12 @@ const DBConnectForm = () => {
     const [connectionStatus, setConnectionStatus] = useState(null);
 
     const [dbConfig, setdbConfig] = useState({
-        type: "myql",
+        type: "mysql",
         host: "localhost",
         port: "3306",
         user: "root",
         password: "",
+        database: "",
     });
 
     const handleInputChange = (e) => {
@@ -39,162 +42,149 @@ const DBConnectForm = () => {
 
         try {
             const { data } = await connectToDatabase(dbConfig);
-
-            const successMessage = "Connection successful!";
+            const successMessage =
+                data.message || "Connection established successfully";
             setConnectionStatus({ success: true, message: successMessage });
-            toast.success(successMessage);
 
-            if (data?.connection?.type === "mysql")
+            if (data?.connection?.type === "mysql") {
                 navigate("/home", {
                     replace: true,
+                    state: { connection: data.connection },
                 });
-            setdbConfig(dbConfig);
+            }
         } catch (error) {
             const errorMessage =
                 error.response?.data?.message ||
-                "Connection failed. Please check your credentials.";
-            setConnectionStatus({ success: false, message: errorMessage });
-            toast.error(errorMessage);
+                error.message ||
+                "Connection failed. Please verify your credentials and try again.";
+            setConnectionStatus({
+                success: false,
+                message: errorMessage,
+                details: error.response?.data?.details,
+            });
         } finally {
             setIsConnecting(false);
         }
     };
 
     return (
-        <div className="min-h-screen w-screen bg-gradient-to-br from-gray-900 to-gray-800 flex items-center justify-center p-4">
+        <div className="min-h-screen w-full bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 flex items-center justify-center p-4">
             <form
                 onSubmit={handleSubmit}
-                className="w-fullw max-w-md bg-gray-850 rounded-2xl shadow-xl p-8 space-y-6 border border-gray-700/50 backdrop-blur-sm"
+                className="w-full max-w-md bg-gray-850/90 rounded-2xl shadow-2xl p-8 space-y-6 border border-gray-700/30 backdrop-blur-sm"
             >
-                <div className="text-center">
-                    <h2 className="text-3xl font-bold text-white mb-2">
-                        Database Connection
+                <div className="text-center space-y-2">
+                    <div className="inline-flex items-center justify-center w-14 h-14 bg-blue-900/20 rounded-full mb-3 border border-blue-700/30">
+                        <FiDatabase className="text-blue-400" size={24} />
+                    </div>
+                    <h2 className="text-3xl font-bold text-white bg-clip-text bg-gradient-to-r from-blue-300 to-blue-500">
+                        MySQL Connection
                     </h2>
-                    <p className="text-gray-400">
-                        Connect to cloud MySQL database
+                    <p className="text-gray-400/90 text-sm">
+                        Secure connection to your database server
                     </p>
                 </div>
 
-                <div className="space-y-5">
-                    {/* host input */}
-                    <div className="relative">
-                        <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-gray-500">
-                            <FiServer className="w-5 h-5" />
+                <div className="space-y-4">
+                    {[
+                        {
+                            icon: <FiServer className="w-5 h-5" />,
+                            name: "host",
+                            value: dbConfig.host,
+                            placeholder: "Server host (e.g., 127.0.0.1)",
+                            type: "text",
+                        },
+                        {
+                            icon: <FiHash className="w-5 h-5" />,
+                            name: "port",
+                            value: dbConfig.port,
+                            placeholder: "Port (default: 3306)",
+                            type: "number",
+                        },
+                        {
+                            icon: <FiUser className="w-5 h-5" />,
+                            name: "user",
+                            value: dbConfig.user,
+                            placeholder: "Username",
+                            type: "text",
+                        },
+                        {
+                            icon: <FiLock className="w-5 h-5" />,
+                            name: "password",
+                            value: dbConfig.password,
+                            placeholder: "Password",
+                            type: "password",
+                        },
+                    ].map((field) => (
+                        <div key={field.name} className="relative">
+                            <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-gray-500">
+                                {field.icon}
+                            </div>
+                            <input
+                                type={field.type}
+                                name={field.name}
+                                value={field.value}
+                                onChange={handleInputChange}
+                                className="w-full pl-10 pr-4 py-3 bg-gray-800/50 border border-gray-700/50 rounded-lg focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 outline-none transition text-white placeholder-gray-500/70 text-sm"
+                                placeholder={field.placeholder}
+                                required={field.name !== "database"}
+                            />
                         </div>
-                        <input
-                            type="text"
-                            name="host"
-                            value={dbConfig.host}
-                            onChange={handleInputChange}
-                            className="w-full pl-10 pr-4 py-3 bg-gray-800 border border-gray-700 rounded-xl focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 outline-none transition text-white placeholder-gray-500"
-                            placeholder="Server host"
-                            required
-                        />
-                    </div>
-
-                    {/* port input */}
-                    <div className="relative">
-                        <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-gray-500">
-                            <FiHash className="w-5 h-5" />
-                        </div>
-                        <input
-                            type="number"
-                            name="port"
-                            value={dbConfig.port}
-                            onChange={handleInputChange}
-                            className="w-full pl-10 pr-4 py-3 bg-gray-800 border border-gray-700 rounded-xl focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 outline-none transition text-white placeholder-gray-500"
-                            placeholder="Port"
-                            required
-                        />
-                    </div>
-
-                    {/* user input */}
-                    <div className="relative">
-                        <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-gray-500">
-                            <FiUser className="w-5 h-5" />
-                        </div>
-                        <input
-                            type="text"
-                            name="user"
-                            value={dbConfig.user}
-                            onChange={handleInputChange}
-                            className="w-full pl-10 pr-4 py-3 bg-gray-800 border border-gray-700 rounded-xl focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 outline-none transition text-white placeholder-gray-500"
-                            placeholder="Username"
-                            required
-                        />
-                    </div>
-
-                    {/* password input */}
-                    <div className="relative">
-                        <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-gray-500">
-                            <FiLock className="w-5 h-5" />
-                        </div>
-                        <input
-                            type="password"
-                            name="password"
-                            value={dbConfig.password}
-                            onChange={handleInputChange}
-                            className="w-full pl-10 pr-4 py-3 bg-gray-800 border border-gray-700 rounded-xl focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 outline-none transition text-white placeholder-gray-500"
-                            placeholder="Password"
-                            required
-                        />
-                    </div>
+                    ))}
                 </div>
 
                 {connectionStatus && (
                     <div
-                        className={`p-3 rounded-lg ${
+                        className={`p-3 rounded-lg border ${
                             connectionStatus.success
-                                ? "bg-green-900/30 text-green-400"
-                                : "bg-red-900/30 text-red-400"
+                                ? "bg-emerald-900/20 text-emerald-300 border-emerald-800/30"
+                                : "bg-rose-900/20 text-rose-300 border-rose-800/30"
                         }`}
                     >
-                        {connectionStatus.message}
+                        <div className="flex items-start gap-2">
+                            <div className="mt-0.5">
+                                {connectionStatus.success ? (
+                                    <FiCheck className="w-4 h-4 text-emerald-400" />
+                                ) : (
+                                    <FiX className="w-4 h-4 text-rose-400" />
+                                )}
+                            </div>
+                            <div>
+                                <p className="text-sm font-medium">
+                                    {connectionStatus.message}
+                                </p>
+                                {!connectionStatus.success &&
+                                    connectionStatus.details && (
+                                        <p className="text-xs mt-1 opacity-80">
+                                            {connectionStatus.details}
+                                        </p>
+                                    )}
+                            </div>
+                        </div>
                     </div>
                 )}
 
                 <button
                     type="submit"
                     disabled={isConnecting}
-                    className={`w-full flex items-center justify-center gap-2 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white font-medium py-3 px-4 rounded-xl transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:ring-offset-2 focus:ring-offset-gray-850 ${
-                        isConnecting ? "opacity-80 cursor-not-allowed" : ""
+                    className={`w-full flex items-center justify-center gap-2 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white font-medium py-3 px-4 rounded-lg transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:ring-offset-2 focus:ring-offset-gray-850 group ${
+                        isConnecting
+                            ? "opacity-90 cursor-progress"
+                            : "hover:shadow-lg hover:shadow-blue-500/20"
                     }`}
                 >
                     {isConnecting ? (
                         <>
-                            <svg
-                                className="animate-spin -ml-1 mr-2 h-5 w-5 text-white"
-                                xmlns="http://www.w3.org/2000/svg"
-                                fill="none"
-                                viewBox="0 0 24 24"
-                            >
-                                <circle
-                                    className="opacity-25"
-                                    cx="12"
-                                    cy="12"
-                                    r="10"
-                                    stroke="currentColor"
-                                    strokeWidth="4"
-                                ></circle>
-                                <path
-                                    className="opacity-75"
-                                    fill="currentColor"
-                                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                                ></path>
-                            </svg>
-                            Connecting...
+                            <FiLoader className="animate-spin w-5 h-5" />
+                            Establishing Connection...
                         </>
                     ) : (
                         <>
-                            Connect to MySQL Database
-                            <FiArrowRight className="w-5 h-5" />
+                            Connect to Database
+                            <FiArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
                         </>
                     )}
                 </button>
-
-                <div className="text-center text-sm text-gray-500 mt-4">
-                    <p>Your credentials are encrypted during transmission</p>
-                </div>
             </form>
         </div>
     );

@@ -2,13 +2,14 @@ import { memo, useCallback, useEffect, useState } from "react";
 import {
     FaChevronRight,
     FaDatabase,
+    FaExclamationTriangle,
     FaPlus,
+    FaSearch,
     FaServer,
     FaTerminal,
+    FaTimes,
     FaTrash,
     FaUser,
-    FaSearch,
-    FaTimes,
 } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
@@ -20,22 +21,33 @@ import {
     getAllDatabases,
 } from "../utils/api/axios.js";
 
-// Enhanced DatabaseItem with microinteractions
+// Enhanced DatabaseItem with better microinteractions
 const DatabaseItem = memo(({ db, onClick, onDelete }) => {
     const [isHovered, setIsHovered] = useState(false);
+    const [isDeleting, setIsDeleting] = useState(false);
+
+    const handleDelete = (e) => {
+        e.stopPropagation();
+        setIsDeleting(true);
+        setTimeout(() => {
+            onDelete();
+            setIsDeleting(false);
+        }, 300);
+    };
 
     return (
         <div
-            title="Click to open the database or click the trash icon to delete."
+            title={`Open ${db} or click trash icon to delete`}
             className={`
                 group relative p-3 px-4 transition-all duration-300 
                 hover:bg-gray-700/50 hover:shadow-lg rounded-md
                 border border-transparent hover:border-gray-600/50
+                ${isDeleting ? "scale-95 opacity-0" : "scale-100 opacity-100"}
             `}
             onMouseEnter={() => setIsHovered(true)}
             onMouseLeave={() => setIsHovered(false)}
         >
-            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-blue-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-blue-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
             <div
                 onClick={onClick}
                 className="cursor-pointer flex items-center justify-between relative z-10"
@@ -68,10 +80,7 @@ const DatabaseItem = memo(({ db, onClick, onDelete }) => {
                 </div>
                 <div className="flex items-center gap-2">
                     <button
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            onDelete();
-                        }}
+                        onClick={handleDelete}
                         className={`
                             text-red-400 hover:text-red-300 
                             p-1 transition-all duration-300
@@ -80,8 +89,9 @@ const DatabaseItem = memo(({ db, onClick, onDelete }) => {
                                     ? "opacity-100 scale-100"
                                     : "opacity-0 scale-90"
                             }
+                            hover:scale-110
                         `}
-                        title="Delete database"
+                        title={`Delete ${db}`}
                     >
                         <FaTrash className="text-sm" />
                     </button>
@@ -98,26 +108,58 @@ const DatabaseItem = memo(({ db, onClick, onDelete }) => {
     );
 });
 
-// Enhanced Modal component with animations
+// Enhanced Modal component with two-step delete confirmation
 const DatabaseModal = memo(({ type, state, onClose, onSubmit }) => {
     const isCreate = type === "create";
     const { loading } = state.modal[type];
-    const title = isCreate ? "Create New Database" : "Delete Database";
+    const [confirmationText, setConfirmationText] = useState("");
+    const [step, setStep] = useState(1); // For delete modal steps
+
+    const title = isCreate
+        ? "Create New Database"
+        : "Confirm Database Deletion";
     const icon = isCreate ? (
-        <FaDatabase className="text-blue-400 animate-pulse" />
+        <FaDatabase className="text-blue-400" />
     ) : (
-        <FaDatabase className="text-red-400 animate-pulse" />
+        <FaExclamationTriangle className="text-red-400" />
     );
+
+    // Reset state when modal closes
+    const handleClose = () => {
+        setConfirmationText("");
+        setStep(1);
+        onClose();
+    };
 
     if (!state.modal[type].visible) return null;
 
+    const requiredDeleteText = `delete database ${state.modal.delete.dbName}`;
+    const isDeleteConfirmed = confirmationText === requiredDeleteText;
+
+    const handleDeleteSubmit = () => {
+        if (step === 1) {
+            setStep(2);
+            return;
+        }
+        if (isDeleteConfirmed) {
+            onSubmit();
+        }
+    };
+
     return (
         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fadeIn">
-            <div className="bg-gray-800 rounded-xl p-6 w-full max-w-md border border-gray-700 shadow-2xl animate-scaleIn">
-                <h3 className="text-2xl font-bold text-white mb-4 flex items-center gap-2">
-                    {icon}
-                    {title}
-                </h3>
+            <div className="bg-gray-800 rounded-xl p-6 w-full max-w-2xl border border-gray-700 shadow-2xl animate-scaleIn">
+                <div className="flex items-start justify-between mb-4">
+                    <h3 className="text-xl font-bold text-white flex items-center gap-2">
+                        {icon}
+                        {title}
+                    </h3>
+                    {!isCreate && step === 2 && (
+                        <span className="text-xs bg-red-500/20 text-red-300 px-2 py-1 rounded-full">
+                            Final Confirmation
+                        </span>
+                    )}
+                </div>
 
                 {isCreate ? (
                     <>
@@ -131,45 +173,101 @@ const DatabaseModal = memo(({ type, state, onClose, onSubmit }) => {
                                 onChange={(e) =>
                                     state.setNewDbName(e.target.value)
                                 }
-                                className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all text-white placeholder-gray-400"
+                                className="w-full px-4 py-2.5 bg-gray-700 border border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all text-white placeholder-gray-400"
                                 placeholder="e.g. customer_data"
                                 autoFocus
                             />
-                            <p className="text-xs text-gray-500 mt-1">
-                                Only alphanumeric characters and underscores
-                                allowed
-                            </p>
+                            <div className="flex items-start gap-2 mt-2">
+                                <FaExclamationTriangle className="text-yellow-400 text-xs mt-0.5 flex-shrink-0" />
+                                <p className="text-xs text-gray-400">
+                                    Only alphanumeric characters and underscores
+                                    allowed. Names are case-sensitive.
+                                </p>
+                            </div>
                         </div>
                     </>
+                ) : step === 1 ? (
+                    <div className="flex items-start gap-3 bg-red-900/20 border border-red-800/50 p-4 rounded-lg mb-4">
+                        <FaExclamationTriangle className="text-red-400 mt-0.5 flex-shrink-0" />
+                        <div>
+                            <p className="text-gray-300">
+                                You are attempting to delete the database :{" "}
+                                <b>{state.modal.delete.dbName}</b>
+                            </p>
+                            <p className="text-red-400 text-sm">
+                                This will permanently erase all data and cannot
+                                be undone.
+                            </p>
+                        </div>
+                    </div>
                 ) : (
                     <div className="mb-6">
-                        <p className="text-gray-300">
-                            Are you sure you want to delete the database{" "}
-                            <span className="font-bold text-white">
-                                "{state.modal.delete.dbName}"
-                            </span>
-                            ?
-                        </p>
-                        <p className="text-red-400 text-sm mt-2 animate-pulse">
-                            Warning: This action cannot be undone. All tables
-                            and data will be permanently deleted.
+                        <div className="flex items-start gap-3 bg-red-900/20 border border-red-800/50 p-4 rounded-lg mb-4">
+                            <FaExclamationTriangle className="text-red-400 mt-0.5 flex-shrink-0" />
+                            <div>
+                                <p className="text-gray-300 mb-2">
+                                    Type the following to confirm deletion:
+                                </p>
+                                <p className="font-mono bg-gray-900/50 px-3 py-2 rounded text-red-300 text-sm">
+                                    delete database {state.modal.delete.dbName}
+                                </p>
+                            </div>
+                        </div>
+                        <input
+                            type="text"
+                            value={confirmationText}
+                            onChange={(e) =>
+                                setConfirmationText(e.target.value)
+                            }
+                            className="w-full px-4 py-2.5 bg-gray-700 border border-gray-600 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none transition-all text-white placeholder-gray-400 font-mono text-sm"
+                            placeholder={`Type exactly as shown above`}
+                            autoFocus
+                        />
+                        <p
+                            className={`text-xs mt-2 flex items-center gap-1 ${
+                                isDeleteConfirmed
+                                    ? "text-green-400"
+                                    : "text-red-400"
+                            }`}
+                        >
+                            {isDeleteConfirmed ? (
+                                <>
+                                    <span className="text-green-400">✓</span>
+                                    <span>Confirmation matches</span>
+                                </>
+                            ) : (
+                                <>
+                                    <span className="text-red-400">✗</span>
+                                    <span>Text must match exactly</span>
+                                </>
+                            )}
                         </p>
                     </div>
                 )}
 
-                <div className="flex justify-end gap-3">
+                <div className="flex justify-end gap-3 pt-2">
                     <button
-                        onClick={onClose}
-                        className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-all duration-300 hover:scale-[1.02]"
+                        onClick={handleClose}
+                        className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-all duration-300 hover:scale-[1.02] flex items-center gap-2"
                         disabled={loading}
-                        title="Close without saving changes"
+                        title="Cancel this operation"
                     >
+                        <FaTimes />
                         Cancel
                     </button>
                     <button
-                        onClick={onSubmit}
-                        title={isCreate ? "Create database" : "Delete database"}
-                        disabled={loading}
+                        onClick={isCreate ? onSubmit : handleDeleteSubmit}
+                        title={
+                            isCreate
+                                ? "Create database"
+                                : step === 1
+                                ? "Continue to confirmation"
+                                : "Delete database"
+                        }
+                        disabled={
+                            loading ||
+                            (!isCreate && step === 2 && !isDeleteConfirmed)
+                        }
                         className={`px-6 py-2 bg-gradient-to-r ${
                             isCreate
                                 ? "from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400"
@@ -179,11 +277,18 @@ const DatabaseModal = memo(({ type, state, onClose, onSubmit }) => {
                         {loading ? (
                             <Loader size="small" />
                         ) : isCreate ? (
-                            <FaPlus className="transition-transform group-hover:rotate-90" />
+                            <>
+                                <FaPlus className="transition-transform group-hover:rotate-90" />
+                                Create
+                            </>
+                        ) : step === 1 ? (
+                            "Continue"
                         ) : (
-                            <FaTrash className="transition-transform group-hover:scale-110" />
+                            <>
+                                <FaTrash className="transition-transform group-hover:scale-110" />
+                                Delete
+                            </>
                         )}
-                        {isCreate ? "Create" : "Delete"}
                     </button>
                 </div>
             </div>
@@ -218,7 +323,9 @@ const DataBaseList = () => {
             setError(
                 error.response?.data?.message || "Failed to load databases",
             );
-            toast.error("Failed to load databases");
+            toast.error("Failed to load databases", {
+                className: "bg-red-900/80 border border-red-700",
+            });
         } finally {
             setLoading(false);
         }
@@ -250,7 +357,20 @@ const DataBaseList = () => {
 
     const handleCreateDatabase = useCallback(async () => {
         if (!newDbName.trim()) {
-            toast.error("Please enter a database name");
+            toast.error("Please enter a database name", {
+                className: "bg-red-900/80 border border-red-700",
+            });
+            return;
+        }
+
+        // Validate database name
+        if (!/^[a-zA-Z0-9_]+$/.test(newDbName)) {
+            toast.error(
+                "Database name can only contain letters, numbers, and underscores",
+                {
+                    className: "bg-red-900/80 border border-red-700",
+                },
+            );
             return;
         }
 
@@ -282,12 +402,17 @@ const DataBaseList = () => {
                 {
                     className: "bg-green-900/80 border border-green-700",
                     bodyClassName: "relative",
+                    autoClose: 3000,
+                    progressStyle: { background: "rgba(74, 222, 128, 0.5)" },
                 },
             );
         } catch (error) {
             console.error("Error creating database:", error);
             toast.error(
                 error.response?.data?.message || "Failed to create database",
+                {
+                    className: "bg-red-900/80 border border-red-700",
+                },
             );
             setModalState((prev) => ({
                 ...prev,
@@ -330,12 +455,17 @@ const DataBaseList = () => {
                 {
                     className: "bg-green-900/80 border border-green-700",
                     bodyClassName: "relative",
+                    autoClose: 3000,
+                    progressStyle: { background: "rgba(74, 222, 128, 0.5)" },
                 },
             );
         } catch (error) {
             console.error("Error deleting database:", error);
             toast.error(
                 error.response?.data?.message || "Failed to delete database",
+                {
+                    className: "bg-red-900/80 border border-red-700",
+                },
             );
             setModalState((prev) => ({
                 ...prev,
@@ -382,7 +512,7 @@ const DataBaseList = () => {
                         </h2>
                         <span
                             title="Total databases"
-                            className="text-xs bg-blue-900/50 text-blue-300 px-2 py-1 rounded-full animate-pulse"
+                            className="text-xs bg-blue-900/50 text-blue-300 px-2 py-1 rounded-full"
                         >
                             {loading ? "..." : databases.length}
                         </span>
@@ -391,7 +521,7 @@ const DataBaseList = () => {
                     {/* Search Bar */}
                     <div
                         className="relative mt-4 mb-3"
-                        title="Type a database name to search for it."
+                        title="Search for databases by name"
                     >
                         <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                             <FaSearch className="text-gray-400" />
@@ -407,6 +537,7 @@ const DataBaseList = () => {
                             <button
                                 onClick={clearSearch}
                                 className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-white transition-colors"
+                                title="Clear search"
                             >
                                 <FaTimes />
                             </button>
@@ -415,14 +546,16 @@ const DataBaseList = () => {
 
                     <button
                         onClick={openCreateModal}
-                        className="flex mt-2 items-center justify-center gap-2 w-full px-3 py-2 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white text-sm font-medium rounded-md transition-all duration-300 shadow-md hover:scale-[1.02]"
-                        title={"Create a new database"}
+                        className="flex mt-2 items-center justify-center gap-2 w-full px-3 py-2 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white text-sm font-medium rounded-md transition-all duration-300 shadow-md hover:scale-[1.02] group"
+                        title="Create a new database"
                     >
                         <FaPlus
                             size={12}
                             className="transition-transform group-hover:rotate-90"
                         />
-                        New Database
+                        <span className="group-hover:translate-x-0.5 transition-transform">
+                            New Database
+                        </span>
                     </button>
                 </div>
 
@@ -436,9 +569,18 @@ const DataBaseList = () => {
                         <div className="divide-y divide-gray-700/50 px-2">
                             {filteredDatabases.length === 0 ? (
                                 <div className="p-4 text-center text-gray-400 text-sm animate-fadeIn">
-                                    {searchQuery
-                                        ? `No databases found matching "${searchQuery}"`
-                                        : "No databases found"}
+                                    {searchQuery ? (
+                                        <>
+                                            <FaSearch className="inline-block mr-2 opacity-50" />
+                                            No databases found matching "
+                                            {searchQuery}"
+                                        </>
+                                    ) : (
+                                        <>
+                                            <FaDatabase className="inline-block mr-2 opacity-50" />
+                                            No databases available
+                                        </>
+                                    )}
                                 </div>
                             ) : (
                                 filteredDatabases.map((db) => (
@@ -458,7 +600,7 @@ const DataBaseList = () => {
                 <div className="p-4 border-t border-gray-700 sticky bottom-0 bg-gray-800 flex flex-col gap-3">
                     <button
                         onClick={() => navigate("/home/users")}
-                        title="Manage users and permissions."
+                        title="Manage users and permissions"
                         className="flex items-center justify-center gap-2 w-full px-3 py-2 bg-gray-700 hover:bg-gray-600 text-gray-200 text-sm font-medium rounded-md transition-all duration-300 hover:scale-[1.02] group"
                     >
                         <FaUser
@@ -466,13 +608,13 @@ const DataBaseList = () => {
                             className="group-hover:text-blue-300 transition-colors"
                         />
                         <span className="group-hover:text-white transition-colors">
-                            User Control
+                            User Management
                         </span>
                     </button>
 
                     <button
                         onClick={() => navigate("/home/query-console")}
-                        title="Interact with your MySQL database using the command line."
+                        title="Execute SQL queries directly"
                         className="flex items-center justify-center gap-2 w-full px-3 py-2 bg-gray-700 hover:bg-gray-600 text-gray-200 text-sm font-medium rounded-md transition-all duration-300 hover:scale-[1.02] group"
                     >
                         <FaTerminal

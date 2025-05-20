@@ -51,7 +51,6 @@ const TableEdit = () => {
                             {tableName}
                         </h3>
                         <div className="flex items-center gap-2 text-sm text-gray-400">
-                            <FaDatabase className="text-blue-300" />
                             <span>{dbName}</span>
                         </div>
                     </div>

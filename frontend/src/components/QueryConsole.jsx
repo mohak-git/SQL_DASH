@@ -8,7 +8,6 @@ import {
     FiDatabase,
     FiLoader,
     FiPlay,
-    FiRefreshCcw,
     FiRefreshCw,
     FiRotateCcw,
     FiRotateCw,
@@ -16,6 +15,7 @@ import {
     FiTrash2,
 } from "react-icons/fi";
 
+import debounce from "lodash.debounce";
 import { FaSort } from "react-icons/fa";
 import { useParams } from "react-router-dom";
 import { toast } from "react-toastify";
@@ -27,7 +27,7 @@ import {
     getTableSchema,
 } from "../utils/api/axios.js";
 import CopyButton from "./common/CopyButton.jsx";
-import debounce from "lodash.debounce";
+import RefreshButton from "./common/RefreshButton.jsx";
 
 // Editor configuration
 const EDITOR_OPTIONS = {
@@ -572,9 +572,7 @@ const QueryConsole = () => {
                         : data.results.affectedRows || 0,
                 };
             } else {
-                throw new Error(
-                    data.error?.message || "Query execution failed",
-                );
+                toast.error(data.error?.message || "Query execution failed");
             }
         }
         return lastResult;
@@ -645,26 +643,9 @@ const QueryConsole = () => {
                         ? data.results.length
                         : data.results.affectedRows || 0,
                 });
-                toast.success(
-                    <div>
-                        <div className="font-medium">
-                            Query executed successfully
-                        </div>
-                        <div className="text-xs text-gray-300 mt-1">
-                            {data.executionTime} •{" "}
-                            {data.results.length || data.results.affectedRows}{" "}
-                            row
-                            {(data.results.length !== 1 ||
-                                data.results.affectedRows !== 1) &&
-                                "s"}
-                        </div>
-                    </div>,
-                    { className: "bg-green-900/80 border border-green-700" },
-                );
+                toast.success(`Query executed successfully`);
             } else {
-                throw new Error(
-                    data.error?.message || "Query execution failed",
-                );
+                toast.error(data.error?.message || "Query execution failed");
             }
         } catch (err) {
             setError({
@@ -785,14 +766,10 @@ const QueryConsole = () => {
                         </div>
                     </div>
                 </div>
-                <button
-                title="Refresh in case editor is not visible"
-                    onClick={() => window.location.reload()}
-                    className="flex mt-2 items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white text-sm font-medium rounded-md transition-all duration-300 shadow-md hover:scale-[1.02]"
-                >
-                    <FiRefreshCw />
-                    Refresh
-                </button>
+                <RefreshButton
+                    action={() => window.location.reload()}
+                    title="Refresh in case editor is not visible"
+                />
             </div>
 
             <div className="flex-grow bg-gray-850 rounded-xl border border-gray-700/50 overflow-hidden shadow-xl">

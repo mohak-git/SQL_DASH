@@ -96,15 +96,8 @@ const MetricCard = ({
 };
 
 // Animated Clock Component
-const AnimatedClock = ({ date, setDate }) => {
-    useEffect(() => {
-        const interval = setInterval(() => {
-            setDate(new Date());
-        }, 1000);
-        return () => clearInterval(interval);
-    }, []);
-
-    if (!date) return <Loader />;
+const AnimatedClock = ({ date }) => {
+    if (!date) return <Loader size="small" />;
 
     const hours = date.getHours();
     const minutes = date.getMinutes();
@@ -115,8 +108,17 @@ const AnimatedClock = ({ date, setDate }) => {
     const secondDegrees = seconds * 6;
 
     return (
-        <div className="relative w-10 h-10 rounded-full bg-blue-900/20 border border-blue-700/50 flex items-center justify-center">
+        <div className="relative w-10 h-10 rounded-full bg-blue-900/20 border border-blue-700/50 flex items-center justify-center shadow-inner">
             <div className="absolute w-3 h-3 rounded-full bg-blue-500/50 z-10"></div>
+            {[...Array(12)].map((_, i) => (
+                <div
+                    key={i}
+                    className="absolute w-px h-1 bg-blue-400/30"
+                    style={{
+                        transform: `rotate(${i * 30}deg) translateY(-15px)`,
+                    }}
+                />
+            ))}
 
             {/* Hour hand */}
             <div

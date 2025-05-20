@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import {
     FiArrowLeft,
-    FiChevronsRight,
+    FiChevronRight,
     FiDatabase,
     FiServer,
     FiUser,
@@ -42,48 +42,63 @@ const Header = () => {
     };
 
     return (
-        <div className="flex justify-between items-center w-full px-4 py-2  border-b border-slate-700">
+        <header className="flex justify-between items-center w-full px-4 py-2 border-b border-slate-700">
             <div className="flex items-center gap-4">
                 <button
-                    title="Go back"
                     onClick={() => navigate(-1)}
-                    className="flex items-center px-4 py-2 rounded-md text-cyan-500 bg-slate-700 border border-sky-400 hover:bg-slate-600 transition-all duration-200 hover:scale-105 active:scale-95"
+                    className="flex items-center justify-center p-2 rounded-lg text-cyan-400 hover:bg-gray-700/50 transition-all duration-200 hover:scale-105 active:scale-95 border border-gray-600 hover:border-cyan-400"
+                    title="Go back"
                 >
                     <FiArrowLeft className="h-5 w-5" />
                 </button>
+                <Link
+                    to="/"
+                    className={`px-2 py-1 rounded-md hover:bg-gray-700/50 transition-colors`}
+                >
+                    <img
+                        src="/logo_noBg.png"
+                        alt="logo"
+                        className="size-10 ml-4"
+                    />
+                </Link>
+                <FiChevronRight className="h-4 w-4 text-gray-500 mx-1" />
 
-                <ul className="flex items-center space-x-1 text-sm font-medium text-purple-200">
-                    {pathParts.map((part, index) => {
-                        const to =
-                            "/" + pathParts.slice(0, index + 1).join("/");
-                        return (
-                            <li
-                                key={index}
-                                className="flex items-center gap-1 italic"
-                            >
+                <nav className="flex items-center">
+                    <ol className="flex items-center space-x-2 text-sm font-medium text-gray-300">
+                        {pathParts.map((part, index) => (
+                            <li key={index} className="flex items-center">
                                 <Link
-                                    to={to}
-                                    className="hover:text-purple-100 transition-colors hover:underline decoration-sky-400"
+                                    to={`/${pathParts
+                                        .slice(0, index + 1)
+                                        .join("/")}`}
+                                    className={`px-2 py-1 rounded-md hover:bg-gray-700/50 transition-colors ${
+                                        index === pathParts.length - 1
+                                            ? "text-cyan-400 font-semibold"
+                                            : "hover:text-cyan-300"
+                                    }`}
                                 >
                                     {part}
                                 </Link>
                                 {index < pathParts.length - 1 && (
-                                    <FiChevronsRight className="h-4 w-4 text-gray-400" />
+                                    <FiChevronRight className="h-4 w-4 text-gray-500 mx-1" />
                                 )}
                             </li>
-                        );
-                    })}
-                </ul>
+                        ))}
+                    </ol>
+                </nav>
             </div>
 
             <div className="relative">
                 <button
-                    className="flex items-center gap-3 px-4 py-2 rounded-full border text-cyan-500 bg-slate-700 border-sky-400 hover:bg-slate-600 transition-all duration-200 group"
+                    className="flex items-center gap-2 px-4 py-2 rounded-full bg-gray-800 border border-green-900/50 hover:border-green-400 transition-all duration-200 group"
                     onMouseEnter={() => setIsTooltipVisible(true)}
                     onMouseLeave={() => setIsTooltipVisible(false)}
+                    aria-label="Connection status"
                 >
-                    <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse group-hover:animate-none group-hover:bg-emerald-400"></div>
-                    <span className="text-sm font-medium">Connected</span>
+                    <div className="w-2.5 h-2.5 rounded-full bg-green-400 animate-pulse group-hover:animate-none"></div>
+                    <span className="text-sm font-medium text-green-400">
+                        Connected
+                    </span>
                 </button>
 
                 {isTooltipVisible && (
@@ -207,7 +222,7 @@ const Header = () => {
                     </div>
                 )}
             </div>
-        </div>
+        </header>
     );
 };
 
