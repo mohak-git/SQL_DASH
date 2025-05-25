@@ -5,25 +5,29 @@
     <title>Server Control Dashboard</title>
     <style>
         :root {
-            --bg-color: #444;
-            --panel-bg: #555;
-            --border-color: #cccccc;
-            --text-color: #333333;
-            --text-muted: #666666;
-            --title-bar-bg: #e0e0e0; /* Slightly darker than main bg */
-            --title-bar-text: #444444;
+            --bg-color: #1e1e1e;
+            --panel-bg: #2d2d2d;
+            --border-color: #444;
+            --text-color: #e0e0e0;
+            --text-muted: #999;
+            --title-bar-bg: #252526;
+            --title-bar-text: #cccccc;
             --status-running-bg: #28a745;
             --status-stopped-bg: #dc3545;
-            --button-bg: #007bff;
-            --button-hover-bg: #0056b3;
-            --button-disabled-bg: #ced4da;
-            --log-bg: #2b2b2b;
+            --button-bg: #0d6efd;
+            --button-hover-bg: #0b5ed7;
+            --button-disabled-bg: #3a3a3a;
+            --button-disabled-text: #666;
+            --log-bg: #1a1a1a;
             --log-text: #d4d4d4;
-            --log-timestamp: #888888;
-            --control-hover-bg: #cccccc;
+            --log-timestamp: #888;
+            --control-hover-bg: #333;
             --control-close-hover-bg: #e81123;
-            --control-close-hover-text: #ffffff;
+            --control-close-hover-text: #fff;
+            --scrollbar-track: #2d2d2d;
+            --scrollbar-thumb: #555;
         }
+        
         body {
             font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
             margin: 0;
@@ -34,36 +38,34 @@
             height: 100vh;
             display: flex;
             flex-direction: column;
-            overflow: hidden; /* Prevent body scrollbar */
+            overflow: hidden;
         }
         
         /* --- Custom Title Bar --- */
         .title-bar {
             background-color: var(--title-bar-bg);
-            height: 32px; /* Standard height */
+            height: 32px;
             display: flex;
             align-items: center;
             justify-content: space-between;
             padding: 0 8px;
             border-bottom: 1px solid var(--border-color);
-            flex-shrink: 0; /* Prevent shrinking */
+            flex-shrink: 0;
             user-select: none;
         }
         .title-bar .title {
             font-weight: 600;
             color: var(--title-bar-text);
             margin-left: 4px;
-            /* Allow dragging */
             -webkit-app-region: drag;
-            flex-grow: 1; /* Allow title to take space */
-            text-align: center; /* Center title */
+            flex-grow: 1;
+            text-align: center;
             overflow: hidden;
             white-space: nowrap;
             text-overflow: ellipsis;
         }
         .title-bar .window-controls {
             display: flex;
-            /* Prevent dragging controls */
             -webkit-app-region: no-drag;
         }
         .title-bar .control-button {
@@ -85,17 +87,15 @@
             background-color: var(--control-close-hover-bg);
             color: var(--control-close-hover-text);
         }
-        /* Using simple text characters for controls */
         #minimize-btn::before { content: "—"; }
         #maximize-btn::before { content: "□"; }
         #close-btn::before { content: "✕"; }
-        /* ------------------------ */
-
+        
         .main-content {
             flex-grow: 1; 
             display: flex;
             flex-direction: column;
-            overflow: hidden; /* Contain scroll within */
+            overflow: hidden;
         }
         .container {
             flex-grow: 1;
@@ -103,11 +103,11 @@
             margin: 20px;
             padding: 25px;
             border-radius: 6px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-            overflow-y: auto; /* Allow scrolling */
+            box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+            overflow-y: auto;
             display: flex;
             flex-direction: column;
-            gap: 25px; /* Space between server cards */
+            gap: 25px;
         }
         h1 {
             text-align: center;
@@ -123,14 +123,14 @@
             padding: 20px;
             display: flex;
             flex-direction: column;
-            gap: 15px; /* Space elements inside card */
+            gap: 15px;
         }
         .card-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
             padding-bottom: 10px;
-            border-bottom: 1px solid #e0e0e0;
+            border-bottom: 1px solid var(--border-color);
         }
         .server-title {
             font-size: 1.3em;
@@ -144,7 +144,7 @@
         .status {
             display: inline-block;
             padding: 4px 10px;
-            border-radius: 12px; /* Pill shape */
+            border-radius: 12px;
             font-weight: 600;
             font-size: 0.85em;
             color: white;
@@ -171,11 +171,11 @@
             cursor: pointer;
             font-size: 0.95em;
             transition: background-color 0.2s ease-in-out, opacity 0.2s ease-in-out;
-            display: inline-flex; /* Align icon and text */
+            display: inline-flex;
             align-items: center;
-            gap: 6px; /* Space between icon and text */
+            gap: 6px;
         }
-        button .icon { /* Basic icon styling */
+        button .icon {
             font-size: 1.1em;
         }
         button:hover {
@@ -183,7 +183,7 @@
         }
         button:disabled {
             background-color: var(--button-disabled-bg);
-            color: #6c757d;
+            color: var(--button-disabled-text);
             cursor: not-allowed;
             opacity: 0.7;
         }
@@ -197,22 +197,22 @@
             justify-content: space-between;
             align-items: center;
         }
-         .log-header label {
-             font-weight: 600;
-             color: var(--text-muted);
-         }
-         .log-header button {
-             padding: 4px 8px;
-             font-size: 0.85em;
-             background-color: #6c757d;
-         }
-         .log-header button:hover {
-             background-color: #5a6268;
-         }
+        .log-header label {
+            font-weight: 600;
+            color: var(--text-muted);
+        }
+        .log-header button {
+            padding: 4px 8px;
+            font-size: 0.85em;
+            background-color: #495057;
+        }
+        .log-header button:hover {
+            background-color: #3a4046;
+        }
         .logs {
             background-color: var(--log-bg);
             color: var(--log-text);
-            border: 1px solid #444;
+            border: 1px solid var(--border-color);
             padding: 10px 15px;
             border-radius: 4px;
             height: 200px;
@@ -229,12 +229,22 @@
         .logs .timestamp {
             color: var(--log-timestamp);
             margin-right: 8px;
-            user-select: none; /* Prevent selecting timestamp */
+            user-select: none;
         }
-        ::-webkit-scrollbar{
+        ::-webkit-scrollbar {
             width: 8px;
             height: 8px;
-            border-radius: 50%;
+        }
+        ::-webkit-scrollbar-track {
+            background: var(--scrollbar-track);
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: var(--scrollbar-thumb);
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #666;
         }
     </style>
 </head>
@@ -252,8 +262,6 @@
     <!-- Main Content Area -->
     <div class="main-content">
         <div class="container">
-            <!-- No main H1 here anymore, title is in the bar -->
-            
             <!-- Backend Server Card -->
             <div class="server-card">
                 <div class="card-header">
@@ -302,4 +310,4 @@
     </div>
     <script src="dashboard.js"></script>
 </body>
-</html> 
+</html>
