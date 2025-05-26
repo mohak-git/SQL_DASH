@@ -8,7 +8,6 @@ import {
     FiDatabase,
     FiLoader,
     FiPlay,
-    FiRefreshCw,
     FiRotateCcw,
     FiRotateCw,
     FiTerminal,
@@ -20,7 +19,6 @@ import { FaSort } from "react-icons/fa";
 import { useParams } from "react-router-dom";
 import { toast } from "react-toastify";
 import "../../monacoSetup.js";
-import Error from "../ui/Error.jsx";
 import {
     getGenAISuggestion,
     getQueryExecuted,
@@ -106,7 +104,7 @@ const EditorControls = ({
             position="bottom-right"
             shortcutKey="(Ctrl+C)"
         />
-        <div className="absolute bottom-4 right-15 flex z-50 gap-4">
+        <div className="absolute bottom-4 right-15 flex z-40 gap-4">
             <button
                 onClick={undoEdit}
                 className="p-2 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-md border border-gray-700 transition-all duration-200 hover:text-white"
